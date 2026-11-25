@@ -94,7 +94,7 @@ RULES: list[Rule] = [
     Rule("anthropic-key", "Anthropic API key",
          r"\bsk-ant-[A-Za-z0-9_\-]{20,}\b"),
     Rule("stripe-key", "Stripe secret key",
-         r"\b[rpk]_(?:live|test)_[A-Za-z0-9]{16,}\b"),
+         r"\b[spkr]k_(?:live|test)_[A-Za-z0-9]{16,}"),
     Rule("slack-token", "Slack token",
          r"\bxox[baprs]-[A-Za-z0-9-]{10,}\b"),
     Rule("slack-webhook", "Slack incoming webhook",
@@ -145,6 +145,111 @@ FILENAME_RULES: list[tuple[str, re.Pattern, str]] = [
 ]
 
 ENTROPY_OK = re.compile(r"[A-Za-z0-9+/=_\-]{%d,}" % MIN_ENTROPY_TOKEN)
+
+# Every rule gets a synthetic sample that must fire. A rule that cannot match
+# anything is worse than no rule: it looks like coverage and provides none.
+#
+# Samples are assembled at runtime from fragments. GitHub push protection and
+# gitleaks scan this file too, and a contiguous fake credential in source is
+# indistinguishable from a real one to them — it will block the push and force
+# a human to reason about whether it was real. Splitting the literal means the
+# file never contains one, while the in-memory sample still matches the rule.
+def _s(*parts: str) -> str:
+    return "".join(parts)
+
+
+SELF_TEST: dict[str, tuple[str, str]] = {
+    "github-token": (_s("gh = 'ghp_", "Ab3DeFgHiJkLmNoPqRsTuVwXyZ0123456789'"), "a.py"),
+    "github-fine-grained": (_s("t = 'github_pat_", "11ABCDEFG0hijklmnop_QRSTUVWXYZabcdefghij1234'"), "a.py"),
+    "aws-access-key": (_s("aws_access_key_id = AKIA", "IOSFODNN7EXAMPLE"), "a.py"),
+    "aws-secret-key": (_s("aws_secret_access_key = wJalrXUtnFEMI/", "K7MDENG/bPxRfiCYEXAMPLEKEY"), "a.py"),
+    "openai-key": (_s("OPENAI_API_KEY=sk-proj-", "aBcDeFgHiJkLmNoPqRsTuVwXyZ123456"), "a.py"),
+    "anthropic-key": (_s("ANTHROPIC_API_KEY=sk-ant-", "aBcDeFgHiJkLmNoPqRsTuVwXyZ123456"), "a.py"),
+    "stripe-key": (_s("STRIPE_SECRET = 'sk_", "live_aBcDeFgHiJkLmNoP12345678'\npublishable = pk_",
+                      "test_aBcDeFgHiJkLmNoP12345678"), "a.py"),
+    "slack-token": (_s("SLACK = 'xoxb-", "1234567890-abcdefghij'"), "a.py"),
+    "slack-webhook": (_s("url https://hooks.slack.com/services/",
+                         "T01234567/B01234567/aBcDeFgHiJkLmNoP"), "a.py"),
+    "google-api-key": (_s("key=AIza", "SyAbCdEfGhIjKlMnOpQrStUvWxYz1234567890"), "a.py"),
+    "oauth-client-secret": (_s("client 123456789012-",
+                               "abcdefghijklmnopqrstuvwx.apps.googleusercontent.com"), "a.py"),
+    "sendgrid-key": (_s("SG.", "aBcDeFgHiJkLmNoPqRsTuV.aBcDeFgHiJkLmNoPqRsTuVwXyZ"), "a.py"),
+    "twilio-key": (_s("TWILIO_SID=AC", "1234567890abcdef1234567890abcdef"), "a.py"),
+    "npm-token": (_s("//registry.npmjs.org/:_authToken=npm_",
+                     "aBcDeFgHiJkLmNoPqRsTuVwXyZ123456"), "a.py"),
+    "pypi-token": (_s("TWINE_PASSWORD=pypi-", "AgEIcHlwaS5vcmcCJGFiY2RlZmdoaWprbG1ub3A"), "a.py"),
+    "discord-webhook": (_s("https://discord.com/api/webhooks/",
+                           "123456789012345678/aBcDeFgHiJkLmNoPqRsTuVwXyZ123456"), "a.py"),
+    "telegram-bot-token": (_s("BOT=123456789:", "AAhijKLMNOPqrstUVWXYZabcdef0123456789"), "a.py"),
+    "private-key-block": (_s("-----BEGIN OPENSSH PRIVATE ", "KEY-----"), "id_ed25519"),
+    "jwt": (_s("Authorization: Bearer eyJ",
+               "hbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0."
+               "dBjftJeZ4CVPmB92K27uhbUJU1p1r_wW1gFWFOEjXk"), "a.py"),
+    "basic-auth-url": (_s("db = postgres://admin:",
+                          "s3cr3tPassw0rdValue@db.internal:5432/prod"), "a.py"),
+    "huggingface-token": (_s("HF_HOME=hf_", "aBcDeFgHiJkLmNoPqRsTuVwXyZ123456"), "a.py"),
+    "gitlab-token": (_s("GITLAB_TOKEN=glpat-", "aBcDeFgHiJkLmNoPqRsT"), "a.py"),
+    "generic-assignment": (_s('api_key = "aB3dE5fG7h', 'I9jK1lM3nO"'), "a.py"),
+    "high-entropy": (_s("blob q7Zx2Kf9Lm4Np8Rt", "1Vw6Yb3Jd5Hg0Cs7"), "a.py"),
+    "env-file": ("", ".env"),
+    "pem-file": ("", "server.pem"),
+    "ssh-key-file": ("", "id_rsa"),
+    "credential-file": ("", "credentials.json"),
+    "terraform-vars": ("", "prod.tfvars"),
+}
+
+# Lines that look busy but must produce nothing. Guards against a rule so
+# broad it flags ordinary prose.
+SELF_TEST_NEGATIVE = [
+    "The parent commit is 8447141110520342a98693c9c79d2ae39ab97bbe",
+    "sha256: 3a7bd3e2360a3d29eea436fcfb7e44c735d117c42d1c183542bb4f1da32f44d0",
+    "Set your_api_key_here in .env.example before running the engine",
+    "python3 tools/audit-secrets.py --history",
+    "Read DESIGN.md and follow the rules in section 5 about scoring.",
+    "stage_value(tier)   = 100 * (1 + 0.5 * (tier - 1))",
+]
+
+
+def self_test() -> int:
+    """Verify every rule fires on a sample and prose does not trip them."""
+    failures: list[str] = []
+    for rid, (line, filename) in SELF_TEST.items():
+        hits = {f.rule for f in scan_content(REPO_ROOT / filename, line, "self-test")}
+        if rid not in hits:
+            failures.append(f"rule {rid!r} did not fire on its sample")
+
+    for line in SELF_TEST_NEGATIVE:
+        hits = scan_content(REPO_ROOT / "notes.md", line, "self-test")
+        if hits:
+            failures.append(f"false positive on {line!r}: "
+                            + ", ".join(sorted({h.rule for h in hits})))
+
+    # The corpus lives in this file, so a real key pasted into it would be pushed.
+    # GitHub push protection blocks that, but catch it locally first. High-entropy
+    # and generic rules are skipped: the fragments below are legitimately noisy.
+    try:
+        source = SELF.read_text(encoding="utf-8", errors="replace")
+    except OSError:
+        source = ""
+    loose = {"generic-assignment", "high-entropy", "env-file"}
+    for rule in RULES:
+        if rule.rid in loose:
+            continue
+        hit = rule.pattern.search(source)
+        if hit:
+            failures.append(
+                f"this file contains a live-looking {rule.rid} literal: "
+                f"{hit.group(0)[:16]!r} — split it with _s()")
+
+    if failures:
+        print(f"self-test FAILED ({len(failures)}):")
+        for f in failures:
+            print(f"  - {f}")
+        return 1
+    print(f"self-test passed — {len(SELF_TEST)} rules matched, "
+          f"{len(SELF_TEST_NEGATIVE)} clean lines stayed clean")
+    return 0
+
 
 
 @dataclass
@@ -317,7 +422,8 @@ def scan_history(max_blob_bytes: int = 4 * 1024 * 1024) -> list[Finding]:
     try:
         listing = subprocess.run(
             ["git", "rev-list", "--objects", "--all"],
-            cwd=REPO_ROOT, capture_output=True, text=True, timeout=120,
+            cwd=REPO_ROOT, capture_output=True, text=True, errors="replace",
+            timeout=120,
         )
         if listing.returncode != 0:
             return []
@@ -335,38 +441,46 @@ def scan_history(max_blob_bytes: int = 4 * 1024 * 1024) -> list[Finding]:
     for i in range(0, len(batch), 500):
         chunk = batch[i:i + 500]
         try:
+            # Bytes, not text: history contains binary blobs and a text-mode
+            # decode raises UnicodeDecodeError before we can skip them.
             proc = subprocess.run(
                 ["git", "cat-file", "--batch"],
-                cwd=REPO_ROOT, input="\n".join(chunk),
-                capture_output=True, text=True, timeout=300,
+                cwd=REPO_ROOT, input=("\n".join(chunk)).encode(),
+                capture_output=True, timeout=300,
             )
         except (OSError, subprocess.SubprocessError):
             continue
-        # cat-file --batch emits "<sha> <type> <size>\n<content>\n"
-        lines = proc.stdout.split("\n")
-        idx = 0
-        while idx < len(lines):
-            header = lines[idx].split(" ")
+
+        # Protocol: "<sha> <type> <size>\n" then <size> raw bytes then "\n".
+        # A missing object emits "<sha> missing\n" and no content.
+        buf = proc.stdout
+        pos = 0
+        while pos < len(buf):
+            nl = buf.find(b"\n", pos)
+            if nl == -1:
+                break
+            header = buf[pos:nl].decode("ascii", "replace").split(" ")
+            pos = nl + 1
             if len(header) < 3 or header[1] != "blob":
-                idx += 1
                 continue
-            sha, _, size_text = header[0], header[1], header[2]
+            sha = header[0]
             try:
-                size = int(size_text)
+                size = int(header[2])
             except ValueError:
-                idx += 1
                 continue
-            body = "\n".join(lines[idx + 1: idx + 1 + size]) if size else ""
-            idx += 2 + size
+            body = buf[pos:pos + size]
+            pos += size + 1
+
             name = wanted.get(sha, sha)
-            if Path(name).suffix.lower() in SKIP_EXT or Path(name).name in SKIP_BASENAMES:
+            path = Path(name)
+            if path.suffix.lower() in SKIP_EXT or path.name in SKIP_BASENAMES:
                 continue
-            if size > max_blob_bytes:
+            if size > max_blob_bytes or b"\x00" in body[:4096]:
                 continue
             pseudo = REPO_ROOT / name
             if pseudo in SELF_EXCLUDED:
                 continue
-            findings += scan_content(pseudo, body, sha[:10])
+            findings += scan_content(pseudo, body.decode("utf-8", "replace"), sha[:10])
     return findings
 
 
@@ -377,11 +491,24 @@ def main() -> int:
     parser.add_argument("--json", action="store_true", help="emit JSON")
     parser.add_argument("--baseline", action="store_true",
                         help="print allowlist entries for current findings")
+    parser.add_argument("--self-test", action="store_true",
+                        help="verify every rule fires, then exit")
     args = parser.parse_args()
 
     if not (REPO_ROOT / ".git").exists():
         print("not a git repository", file=sys.stderr)
         return 2
+
+    if args.self_test:
+        return self_test()
+
+    # A scanner with a dead rule reports "clean" while covering nothing, which is
+    # the worst possible failure mode. Validate the rules before trusting a verdict.
+    if not args.json:
+        if self_test() != 0:
+            print("\nRefusing to audit: the scanner itself is broken.")
+            return 1
+        print()
 
     findings = scan_worktree()
     if args.history:
