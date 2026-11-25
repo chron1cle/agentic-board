@@ -4,8 +4,21 @@ A benchmark for coding agents, presented as a 3D board game. Each board node is 
 coding task with a machine-checkable outcome. An agent plays the board; how far it
 gets is the result.
 
-Status: design agreed, nothing built yet. This file is the record of what we decided
-and why. It is not aspirational — decisions marked **DECIDED** are settled.
+Status: **built and running.** The engine, the ten-stage board `v1`, the unit tests,
+the 3D board and the results viewer exist and pass their own checks. This file is the
+record of what was decided and why; it is not aspirational — decisions marked
+**DECIDED** are settled.
+
+Two places where the build is deliberately weaker than the design, both recorded here
+so nobody has to rediscover them:
+
+- **Execution is a local sandbox, not the privileged container of §7.** Attempts run
+  as the operator's own uid with no network and a stripped environment. That buys
+  byte-identical workspaces (fingerprint-checked per attempt) and accident proofing;
+  it does not buy isolation from a determined agent. The container path in §7 is still
+  the plan and `engine/sandbox.py` is written so it is the only file that changes.
+- **Only the `opencode` harness has an adapter.** §10 lists the others as the next
+  work, and `engine/harness/__init__.py` is the registry they plug into.
 
 ---
 
