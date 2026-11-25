@@ -1,0 +1,240 @@
+2026-11-23T07:00:00.000Z DEBUG 192.168.4.31 /api/users cache miss key=6
+2026-11-23T07:07:29.001Z INFO 192.168.4.20 /api/checkout ok 900ms
+2026-11-23T07:14:58.002Z WARN 10.0.1.9 /api/search slow response 168ms
+2026-11-23T07:21:27.003Z WARN 192.168.4.31 /api/search slow response 797ms
+2026-11-23T07:28:56.004Z INFO 192.168.4.31 /static/app.js ok 79ms
+2026-11-23T07:35:25.005Z INFO 192.168.4.31 /api/checkout ok 599ms
+2026-11-23T07:42:54.006Z INFO 10.0.1.9 /api/orders ok 655ms
+2026-11-23T07:49:23.007Z INFO 10.0.1.7 /health ok 776ms
+2026-11-23T07:56:52.008Z ERROR 192.168.4.31 /api/checkout failed after 362ms: upstream 502
+2026-11-23T07:03:21.009Z INFO 10.0.1.9 /health ok 79ms
+2026-11-23T07:10:50.010Z DEBUG 10.0.1.9 /health cache miss key=58
+2026-11-23T07:17:19.011Z INFO 10.0.1.9 /api/checkout ok 235ms
+2026-11-23T07:24:48.012Z ERROR 192.168.4.31 /health failed after 691ms: upstream 502
+2026-11-23T07:31:17.013Z INFO 10.0.0.23 /health ok 826ms
+2026-11-23T07:38:46.014Z ERROR 10.0.1.9 /api/users failed after 345ms: upstream 502
+2026-11-23T07:45:15.015Z INFO 10.0.0.11 /health ok 157ms
+2026-11-23T07:52:44.016Z ERROR 10.0.0.11 /health failed after 800ms: upstream 502
+2026-11-23T07:59:13.017Z WARN 10.0.1.7 /api/search slow response 414ms
+2026-11-23T07:06:42.018Z ERROR 192.168.4.20 /static/app.js failed after 673ms: upstream 502
+2026-11-23T08:13:11.019Z INFO 10.0.1.7 /api/users ok 887ms
+2026-11-23T08:20:40.020Z INFO 10.0.0.12 /api/users ok 206ms
+2026-11-23T08:27:09.021Z DEBUG 192.168.4.31 /api/search cache miss key=25
+2026-11-23T08:34:38.022Z WARN 192.168.4.20 /api/orders slow response 172ms
+2026-11-23T08:41:07.023Z WARN 10.0.1.9 /api/search slow response 501ms
+2026-11-23T08:48:36.024Z INFO 10.0.0.11 /api/search ok 496ms
+2026-11-23T08:55:05.025Z ERROR 192.168.4.31 /api/search failed after 774ms: upstream 502
+2026-11-23T08:02:34.026Z INFO 192.168.4.31 /api/orders ok 893ms
+2026-11-23T08:09:03.027Z ERROR 10.0.1.7 /api/users failed after 374ms: upstream 502
+2026-11-23T08:16:32.028Z DEBUG 10.0.1.7 /api/users cache miss key=95
+2026-11-23T08:23:01.029Z INFO 10.0.1.7 /api/checkout ok 37ms
+2026-11-23T08:30:30.030Z WARN 10.0.0.23 /api/search slow response 364ms
+2026-11-23T08:37:59.031Z INFO 10.0.1.9 /api/checkout ok 599ms
+2026-11-23T08:44:28.032Z INFO 10.0.0.11 /api/orders ok 144ms
+2026-11-23T08:51:57.033Z INFO 192.168.4.31 /static/app.js ok 247ms
+2026-11-23T08:58:26.034Z ERROR 192.168.4.20 /api/search failed after 527ms: upstream 502
+2026-11-23T08:05:55.035Z INFO 10.0.0.11 /api/users ok 452ms
+2026-11-23T08:12:24.036Z INFO 10.0.0.11 /api/orders ok 479ms
+2026-11-23T09:19:53.037Z WARN 10.0.0.23 /api/checkout slow response 401ms
+2026-11-23T09:26:22.038Z INFO 10.0.0.12 /api/search ok 753ms
+2026-11-23T09:33:51.039Z INFO 10.0.0.12 /api/search ok 213ms
+2026-11-23T09:40:20.040Z INFO 10.0.0.23 /health ok 23ms
+2026-11-23T09:47:49.041Z DEBUG 10.0.0.23 /api/orders cache miss key=44
+2026-11-23T09:54:18.042Z DEBUG 10.0.1.9 /api/search cache miss key=3
+2026-11-23T09:01:47.043Z DEBUG 192.168.4.20 /api/users cache miss key=90
+2026-11-23T09:08:16.044Z ERROR 10.0.0.12 /api/users failed after 417ms: upstream 502
+2026-11-23T09:15:45.045Z DEBUG 10.0.0.12 /api/orders cache miss key=28
+2026-11-23T09:22:14.046Z DEBUG 192.168.4.20 /api/orders cache miss key=6
+2026-11-23T09:29:43.047Z WARN 192.168.4.20 /api/search slow response 380ms
+2026-11-23T09:36:12.048Z INFO 10.0.1.9 /health ok 810ms
+2026-11-23T09:43:41.049Z INFO 192.168.4.31 /api/orders ok 543ms
+2026-11-23T09:50:10.050Z INFO 10.0.1.9 /health ok 743ms
+2026-11-23T09:57:39.051Z ERROR 10.0.0.11 /api/checkout failed after 154ms: upstream 502
+2026-11-23T09:04:08.052Z INFO 10.0.0.23 /api/checkout ok 18ms
+2026-11-23T09:11:37.053Z INFO 10.0.1.7 /api/checkout ok 443ms
+2026-11-23T09:18:06.054Z INFO 10.0.0.11 /api/search ok 698ms
+2026-11-23T09:25:35.055Z INFO 10.0.0.23 /static/app.js ok 519ms
+2026-11-23T10:32:04.056Z WARN 10.0.1.9 /health slow response 445ms
+2026-11-23T10:39:33.057Z INFO 192.168.4.31 /static/app.js ok 181ms
+2026-11-23T10:46:02.058Z INFO 10.0.1.9 /api/orders ok 179ms
+2026-11-23T10:53:31.059Z DEBUG 192.168.4.31 /api/search cache miss key=24
+2026-11-23T10:00:00.060Z INFO 192.168.4.20 /health ok 343ms
+2026-11-23T10:07:29.061Z DEBUG 10.0.1.9 /static/app.js cache miss key=37
+2026-11-23T10:14:58.062Z ERROR 10.0.0.12 /static/app.js failed after 37ms: upstream 502
+2026-11-23T10:21:27.063Z DEBUG 192.168.4.31 /api/search cache miss key=42
+2026-11-23T10:28:56.064Z DEBUG 10.0.0.23 /api/search cache miss key=17
+2026-11-23T10:35:25.065Z DEBUG 10.0.0.23 /api/search cache miss key=65
+2026-11-23T10:42:54.066Z DEBUG 10.0.1.9 /health cache miss key=92
+2026-11-23T10:49:23.067Z INFO 192.168.4.31 /api/checkout ok 751ms
+2026-11-23T10:56:52.068Z DEBUG 10.0.0.23 /api/users cache miss key=44
+2026-11-23T10:03:21.069Z WARN 10.0.1.9 /api/orders slow response 500ms
+2026-11-23T10:10:50.070Z WARN 10.0.0.23 /health slow response 794ms
+2026-11-23T10:17:19.071Z INFO 10.0.0.23 /static/app.js ok 290ms
+2026-11-23T10:24:48.072Z DEBUG 10.0.1.7 /health cache miss key=2
+2026-11-23T10:31:17.073Z INFO 10.0.1.7 /static/app.js ok 435ms
+2026-11-23T11:38:46.074Z INFO 10.0.0.11 /health ok 277ms
+2026-11-23T11:45:15.075Z DEBUG 10.0.0.23 /api/search cache miss key=1
+2026-11-23T11:52:44.076Z ERROR 10.0.0.23 /api/users failed after 707ms: upstream 502
+2026-11-23T11:59:13.077Z DEBUG 10.0.0.23 /static/app.js cache miss key=74
+2026-11-23T11:06:42.078Z INFO 10.0.0.12 /api/search ok 631ms
+2026-11-23T11:13:11.079Z DEBUG 10.0.1.7 /api/orders cache miss key=59
+2026-11-23T11:20:40.080Z WARN 192.168.4.31 /static/app.js slow response 266ms
+2026-11-23T11:27:09.081Z INFO 192.168.4.20 /api/checkout ok 686ms
+2026-11-23T11:34:38.082Z INFO 10.0.0.12 /api/search ok 825ms
+2026-11-23T11:41:07.083Z DEBUG 192.168.4.20 /static/app.js cache miss key=79
+2026-11-23T11:48:36.084Z ERROR 10.0.1.9 /api/search failed after 316ms: upstream 502
+2026-11-23T11:55:05.085Z INFO 10.0.1.7 /api/checkout ok 217ms
+2026-11-23T11:02:34.086Z INFO 10.0.0.12 /health ok 165ms
+2026-11-23T11:09:03.087Z ERROR 10.0.1.7 /api/orders failed after 424ms: upstream 502
+2026-11-23T11:16:32.088Z ERROR 10.0.0.12 /api/orders failed after 562ms: upstream 502
+2026-11-23T11:23:01.089Z INFO 10.0.0.11 /api/search ok 747ms
+2026-11-23T11:30:30.090Z INFO 10.0.0.11 /api/search ok 613ms
+2026-11-23T11:37:59.091Z INFO 10.0.0.23 /api/users ok 361ms
+2026-11-23T11:44:28.092Z INFO 10.0.0.12 /health ok 703ms
+2026-11-23T12:51:57.093Z ERROR 10.0.0.12 /api/search failed after 118ms: upstream 502
+2026-11-23T12:58:26.094Z INFO 10.0.0.23 /health ok 497ms
+2026-11-23T12:05:55.095Z INFO 10.0.0.23 /health ok 363ms
+2026-11-23T12:12:24.096Z DEBUG 192.168.4.31 /api/users cache miss key=95
+2026-11-23T12:19:53.097Z ERROR 10.0.1.7 /api/checkout failed after 249ms: upstream 502
+2026-11-23T12:26:22.098Z WARN 10.0.1.9 /api/checkout slow response 481ms
+2026-11-23T12:33:51.099Z INFO 192.168.4.20 /api/users ok 762ms
+2026-11-23T12:40:20.100Z DEBUG 10.0.0.23 /static/app.js cache miss key=49
+2026-11-23T12:47:49.101Z INFO 10.0.1.7 /api/orders ok 280ms
+2026-11-23T12:54:18.102Z WARN 192.168.4.20 /static/app.js slow response 435ms
+2026-11-23T12:01:47.103Z INFO 10.0.0.12 /health ok 751ms
+2026-11-23T12:08:16.104Z INFO 10.0.1.9 /health ok 833ms
+2026-11-23T12:15:45.105Z INFO 10.0.0.12 /api/checkout ok 151ms
+2026-11-23T12:22:14.106Z WARN 10.0.0.12 /static/app.js slow response 99ms
+2026-11-23T12:29:43.107Z INFO 192.168.4.31 /api/orders ok 780ms
+2026-11-23T12:36:12.108Z INFO 10.0.0.12 /api/orders ok 672ms
+2026-11-23T12:43:41.109Z INFO 10.0.1.9 /health ok 411ms
+2026-11-23T12:50:10.110Z INFO 192.168.4.20 /api/users ok 70ms
+2026-11-23T13:57:39.111Z WARN 10.0.0.23 /api/checkout slow response 431ms
+2026-11-23T13:04:08.112Z DEBUG 10.0.0.23 /api/orders cache miss key=32
+2026-11-23T13:11:37.113Z INFO 10.0.0.11 /health ok 526ms
+2026-11-23T13:18:06.114Z ERROR 10.0.1.9 /api/search failed after 652ms: upstream 502
+2026-11-23T13:25:35.115Z INFO 10.0.1.7 /api/users ok 83ms
+2026-11-23T13:32:04.116Z DEBUG 10.0.1.7 /health cache miss key=85
+2026-11-23T13:39:33.117Z ERROR 192.168.4.31 /api/search failed after 613ms: upstream 502
+2026-11-23T13:46:02.118Z DEBUG 10.0.0.23 /api/orders cache miss key=45
+2026-11-23T13:53:31.119Z ERROR 10.0.1.7 /health failed after 492ms: upstream 502
+2026-11-23T13:00:00.120Z DEBUG 10.0.0.11 /api/orders cache miss key=26
+2026-11-23T13:07:29.121Z INFO 192.168.4.31 /api/checkout ok 293ms
+2026-11-23T13:14:58.122Z WARN 10.0.1.7 /api/orders slow response 898ms
+2026-11-23T13:21:27.123Z INFO 192.168.4.20 /api/orders ok 180ms
+2026-11-23T13:28:56.124Z INFO 10.0.1.9 /health ok 52ms
+2026-11-23T13:35:25.125Z WARN 10.0.0.11 /api/orders slow response 788ms
+2026-11-23T13:42:54.126Z INFO 10.0.1.7 /static/app.js ok 169ms
+2026-11-23T13:49:23.127Z INFO 10.0.0.23 /api/orders ok 842ms
+2026-11-23T13:56:52.128Z INFO 10.0.1.9 /api/checkout ok 479ms
+2026-11-23T13:03:21.129Z INFO 10.0.1.9 /api/checkout ok 273ms
+2026-11-23T14:10:50.130Z ERROR 10.0.1.9 /api/orders failed after 728ms: upstream 502
+2026-11-23T14:17:19.131Z WARN 10.0.1.9 /api/orders slow response 736ms
+2026-11-23T14:24:48.132Z INFO 10.0.0.12 /health ok 327ms
+2026-11-23T14:31:17.133Z WARN 192.168.4.31 /api/checkout slow response 644ms
+2026-11-23T14:38:46.134Z DEBUG 192.168.4.31 /api/orders cache miss key=58
+2026-11-23T14:45:15.135Z INFO 10.0.1.9 /api/orders ok 849ms
+2026-11-23T14:52:44.136Z DEBUG 192.168.4.20 /api/orders cache miss key=12
+2026-11-23T14:59:13.137Z DEBUG 10.0.1.9 /health cache miss key=41
+2026-11-23T14:06:42.138Z INFO 10.0.0.11 /health ok 410ms
+2026-11-23T14:13:11.139Z INFO 10.0.1.7 /health ok 84ms
+2026-11-23T14:20:40.140Z WARN 192.168.4.20 /api/checkout slow response 560ms
+2026-11-23T14:27:09.141Z ERROR 10.0.1.7 /api/search failed after 35ms: upstream 502
+2026-11-23T14:34:38.142Z INFO 10.0.0.23 /api/orders ok 293ms
+2026-11-23T14:41:07.143Z INFO 10.0.1.9 /static/app.js ok 300ms
+2026-11-23T14:48:36.144Z ERROR 10.0.1.9 /api/search failed after 822ms: upstream 502
+2026-11-23T14:55:05.145Z INFO 10.0.1.7 /api/users ok 548ms
+2026-11-23T14:02:34.146Z ERROR 10.0.0.11 /health failed after 156ms: upstream 502
+2026-11-23T14:09:03.147Z DEBUG 192.168.4.31 /health cache miss key=5
+2026-11-23T15:16:32.148Z WARN 192.168.4.31 /api/orders slow response 190ms
+2026-11-23T15:23:01.149Z INFO 10.0.0.12 /api/orders ok 295ms
+2026-11-23T15:30:30.150Z INFO 10.0.0.23 /api/users ok 818ms
+2026-11-23T15:37:59.151Z INFO 10.0.0.23 /static/app.js ok 392ms
+2026-11-23T15:44:28.152Z INFO 10.0.1.9 /api/checkout ok 574ms
+2026-11-23T15:51:57.153Z INFO 192.168.4.20 /api/checkout ok 143ms
+2026-11-23T15:58:26.154Z WARN 10.0.0.12 /api/orders slow response 354ms
+2026-11-23T15:05:55.155Z WARN 10.0.0.12 /api/search slow response 37ms
+2026-11-23T15:12:24.156Z ERROR 10.0.0.11 /api/orders failed after 643ms: upstream 502
+2026-11-23T15:19:53.157Z WARN 10.0.0.12 /health slow response 82ms
+2026-11-23T15:26:22.158Z INFO 192.168.4.31 /api/search ok 133ms
+2026-11-23T15:33:51.159Z DEBUG 192.168.4.20 /api/users cache miss key=96
+2026-11-23T15:40:20.160Z DEBUG 10.0.1.7 /api/users cache miss key=27
+2026-11-23T15:47:49.161Z DEBUG 10.0.0.11 /health cache miss key=64
+2026-11-23T15:54:18.162Z DEBUG 192.168.4.20 /api/checkout cache miss key=34
+2026-11-23T15:01:47.163Z ERROR 192.168.4.31 /static/app.js failed after 133ms: upstream 502
+2026-11-23T15:08:16.164Z ERROR 10.0.0.23 /static/app.js failed after 199ms: upstream 502
+2026-11-23T15:15:45.165Z DEBUG 10.0.0.12 /api/users cache miss key=8
+2026-11-23T15:22:14.166Z ERROR 10.0.1.7 /api/search failed after 686ms: upstream 502
+2026-11-23T16:29:43.167Z INFO 10.0.1.7 /api/users ok 393ms
+2026-11-23T16:36:12.168Z INFO 10.0.1.7 /static/app.js ok 24ms
+2026-11-23T16:43:41.169Z INFO 10.0.0.23 /static/app.js ok 52ms
+2026-11-23T16:50:10.170Z INFO 10.0.1.7 /api/orders ok 133ms
+2026-11-23T16:57:39.171Z INFO 192.168.4.20 /static/app.js ok 825ms
+2026-11-23T16:04:08.172Z INFO 192.168.4.31 /api/search ok 214ms
+2026-11-23T16:11:37.173Z INFO 10.0.0.12 /health ok 532ms
+2026-11-23T16:18:06.174Z INFO 192.168.4.20 /api/search ok 233ms
+2026-11-23T16:25:35.175Z WARN 10.0.1.9 /static/app.js slow response 518ms
+2026-11-23T16:32:04.176Z INFO 10.0.1.9 /api/search ok 511ms
+2026-11-23T16:39:33.177Z WARN 10.0.0.12 /api/search slow response 100ms
+2026-11-23T16:46:02.178Z INFO 10.0.0.23 /health ok 537ms
+2026-11-23T16:53:31.179Z ERROR 10.0.0.23 /static/app.js failed after 433ms: upstream 502
+2026-11-23T16:00:00.180Z WARN 10.0.1.7 /api/orders slow response 816ms
+2026-11-23T16:07:29.181Z INFO 10.0.0.23 /api/orders ok 571ms
+2026-11-23T16:14:58.182Z INFO 10.0.0.23 /api/orders ok 262ms
+2026-11-23T16:21:27.183Z DEBUG 10.0.1.9 /api/search cache miss key=23
+2026-11-23T16:28:56.184Z INFO 192.168.4.20 /health ok 350ms
+2026-11-23T17:35:25.185Z WARN 10.0.1.9 /api/users slow response 26ms
+2026-11-23T17:42:54.186Z INFO 192.168.4.20 /api/orders ok 707ms
+2026-11-23T17:49:23.187Z WARN 10.0.1.9 /api/checkout slow response 429ms
+2026-11-23T17:56:52.188Z WARN 10.0.0.11 /static/app.js slow response 408ms
+2026-11-23T17:03:21.189Z DEBUG 10.0.1.9 /api/orders cache miss key=7
+2026-11-23T17:10:50.190Z ERROR 192.168.4.20 /api/orders failed after 621ms: upstream 502
+2026-11-23T17:17:19.191Z INFO 10.0.1.9 /api/checkout ok 124ms
+2026-11-23T17:24:48.192Z INFO 10.0.0.11 /api/checkout ok 396ms
+2026-11-23T17:31:17.193Z ERROR 10.0.0.23 /api/orders failed after 417ms: upstream 502
+2026-11-23T17:38:46.194Z INFO 10.0.0.12 /static/app.js ok 155ms
+2026-11-23T17:45:15.195Z ERROR 10.0.0.11 /health failed after 695ms: upstream 502
+2026-11-23T17:52:44.196Z WARN 10.0.1.9 /api/checkout slow response 839ms
+2026-11-23T17:59:13.197Z WARN 10.0.0.23 /api/checkout slow response 260ms
+2026-11-23T17:06:42.198Z DEBUG 10.0.1.7 /api/users cache miss key=64
+2026-11-23T17:13:11.199Z INFO 10.0.1.7 /api/orders ok 312ms
+2026-11-23T17:20:40.200Z ERROR 10.0.0.23 /api/users failed after 766ms: upstream 502
+2026-11-23T17:27:09.201Z INFO 10.0.1.7 /static/app.js ok 852ms
+2026-11-23T17:34:38.202Z INFO 10.0.0.12 /static/app.js ok 362ms
+2026-11-23T17:41:07.203Z DEBUG 10.0.1.7 /api/search cache miss key=16
+2026-11-23T18:48:36.204Z INFO 10.0.1.9 /static/app.js ok 725ms
+2026-11-23T18:55:05.205Z INFO 10.0.1.9 /static/app.js ok 724ms
+2026-11-23T18:02:34.206Z DEBUG 10.0.0.11 /api/users cache miss key=38
+2026-11-23T18:09:03.207Z WARN 192.168.4.20 /api/checkout slow response 658ms
+2026-11-23T18:16:32.208Z WARN 10.0.0.23 /health slow response 609ms
+2026-11-23T18:23:01.209Z DEBUG 10.0.0.23 /api/orders cache miss key=95
+2026-11-23T18:30:30.210Z DEBUG 192.168.4.31 /api/orders cache miss key=15
+2026-11-23T18:37:59.211Z DEBUG 192.168.4.31 /api/checkout cache miss key=63
+2026-11-23T18:44:28.212Z DEBUG 10.0.0.23 /api/checkout cache miss key=38
+2026-11-23T18:51:57.213Z ERROR 10.0.1.9 /api/checkout failed after 65ms: upstream 502
+2026-11-23T18:58:26.214Z ERROR 10.0.0.11 /api/search failed after 867ms: upstream 502
+2026-11-23T18:05:55.215Z DEBUG 192.168.4.31 /health cache miss key=33
+2026-11-23T18:12:24.216Z WARN 10.0.1.7 /api/search slow response 727ms
+2026-11-23T18:19:53.217Z DEBUG 10.0.0.23 /api/checkout cache miss key=56
+2026-11-23T18:26:22.218Z ERROR 10.0.1.7 /api/users failed after 507ms: upstream 502
+2026-11-23T18:33:51.219Z ERROR 10.0.0.12 /api/search failed after 590ms: upstream 502
+2026-11-23T18:40:20.220Z INFO 192.168.4.20 /api/checkout ok 797ms
+2026-11-23T18:47:49.221Z INFO 192.168.4.31 /api/search ok 743ms
+2026-11-23T19:54:18.222Z INFO 192.168.4.31 /health ok 796ms
+2026-11-23T19:01:47.223Z WARN 10.0.1.9 /api/search slow response 236ms
+2026-11-23T19:08:16.224Z WARN 10.0.0.11 /static/app.js slow response 562ms
+2026-11-23T19:15:45.225Z WARN 10.0.1.9 /api/checkout slow response 479ms
+2026-11-23T19:22:14.226Z INFO 10.0.0.11 /api/checkout ok 244ms
+2026-11-23T19:29:43.227Z DEBUG 192.168.4.31 /api/orders cache miss key=49
+2026-11-23T19:36:12.228Z INFO 10.0.1.7 /static/app.js ok 729ms
+2026-11-23T19:43:41.229Z DEBUG 192.168.4.31 /api/orders cache miss key=21
+2026-11-23T19:50:10.230Z DEBUG 192.168.4.20 /api/users cache miss key=61
+2026-11-23T19:57:39.231Z INFO 10.0.0.11 /api/search ok 588ms
+2026-11-23T19:04:08.232Z INFO 192.168.4.31 /api/users ok 724ms
+2026-11-23T19:11:37.233Z DEBUG 192.168.4.20 /health cache miss key=84
+2026-11-23T19:18:06.234Z WARN 10.0.1.9 /health slow response 741ms
+2026-11-23T19:25:35.235Z INFO 10.0.0.12 /api/search ok 890ms
+2026-11-23T19:32:04.236Z ERROR 10.0.0.23 /api/search failed after 38ms: upstream 502
+2026-11-23T19:39:33.237Z INFO 192.168.4.31 /api/users ok 625ms
+2026-11-23T19:46:02.238Z INFO 192.168.4.31 /health ok 710ms
+2026-11-23T19:53:31.239Z INFO 10.0.1.9 /api/orders ok 666ms

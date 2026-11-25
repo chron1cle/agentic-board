@@ -42,6 +42,7 @@ out/
 dist/
 build/
 *.log
+!stages/**/*.log
 *.sqlite
 *.db
 sandbox/

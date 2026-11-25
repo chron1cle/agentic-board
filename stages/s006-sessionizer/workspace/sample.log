@@ -1,0 +1,6 @@
+2026-11-23T08:00:00Z 10.0.0.5 GET /api/orders 200 120ms
+2026-11-23T08:05:00Z 10.0.0.5 GET /api/users 404 30ms
+2026-11-23T08:10:00Z 10.0.0.9 GET /health 200 5ms
+2026-11-23T09:00:00Z 10.0.0.5 POST /api/orders 500 900ms
+garbage line here
+2026-11-23T09:05:00Z 10.0.0.5 GET /api/orders 200 40ms
