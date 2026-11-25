@@ -1,0 +1,33 @@
+name: audit
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # Full history so a secret pushed on another branch is still caught.
+          fetch-depth: 0
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # The hard gate. Lives in-repo, no third-party dependency.
+      - name: Secret audit
+        run: python3 tools/audit-secrets.py --history
+
+      # Advisory second opinion from an independent scanner.
+      - name: gitleaks (advisory)
+        continue-on-error: true
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
