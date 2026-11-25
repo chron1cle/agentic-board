@@ -64,3 +64,30 @@ def feedback_uptake(stage_results) -> float:
     """Observed probability of passing a retry after an oracle rejection."""
     passes, transitions = feedback_counts(stage_results)
     return round(passes / transitions, 4) if transitions else 0.0
+
+
+def segment_scores(board, selected_ids, timeline) -> list[dict]:
+    """Equal weight per stage after dividing out its tier-specific maximum."""
+    results = {row["stage"]: row for row in timeline}
+    selected = set(selected_ids)
+    scores = []
+    for world, segment in enumerate(board.segments, start=1):
+        stages = board.stages[segment.first - 1:segment.last]
+        if any(stage.id not in selected for stage in stages):
+            continue
+        fractions = []
+        cleared = 0
+        for stage in stages:
+            result = results.get(stage.id, {})
+            best = score_stage(stage.tier, 1, base=stage.score_base)
+            if result.get("cleared"):
+                cleared += 1
+                fractions.append(result["points"] / best)
+        scores.append({
+            "world": world,
+            "range": segment.id,
+            "score": round(100 * sum(fractions) / len(stages), 2),
+            "cleared": cleared,
+            "stages": len(stages),
+        })
+    return scores

@@ -1,3 +1,5 @@
+import { worldTheme } from './worldThemes.js'
+
 // Shared layout so the 3D board, the score replay, and the results table all
 // agree on where a stage is and what it looks like.
 
@@ -16,19 +18,22 @@ export function regionOf(name) {
   return REGIONS[name === 'summit' ? 'the-summit' : name] || { label: name || 'Uncharted', color: '#8a8f99', look: '' }
 }
 
-/** Place the stages of an archived run on an ascending helix. */
-export function layout(timeline) {
-  const points = timeline.map((row, i) => {
-    const angle = i * 0.62
-    const radius = 9.5
+/** Lay out each played level using its world's path and board position. */
+export function layout(timeline, worlds = []) {
+  return timeline.map((row, i) => {
+    const location = worldLocation(row, worlds)
+    const theme = worldTheme(location?.world)
+    const level = (location?.level ?? row.index ?? i + 1) - 1
+    const { x, z, angle } = theme.path(level)
+    const lift = theme.lift ?? ((row.index ?? i + 1) - 1 - level) * theme.rise
     return {
       ...row,
+      world: location?.world,
       index0: i,
-      position: [Math.cos(angle) * radius, i * 1.15, Math.sin(angle) * radius],
+      position: [x, lift + level * theme.rise, z],
       angle,
     }
   })
-  return points
 }
 
 export const ARRIVAL = 0.27
@@ -194,4 +199,26 @@ export function replayActivity(rows, frame) {
     attempt, fraction, checking, stage, total: addUsage(previous, stage),
     checks: checks?.length ? { total: checks.length, passed: checks.filter((check) => check.ok).length } : null,
   }
+}
+
+export function worldLocation(row, worlds = []) {
+  if (row.world != null) return { world: row.world, level: row.level }
+  for (const world of worlds) {
+    const [first, last] = world.range.split('-').map(Number)
+    if (world.world != null && first <= row.index && row.index <= last) {
+      return { world: world.world, level: row.index - first + 1 }
+    }
+  }
+  return null
+}
+
+export function levelLabel(row, worlds) {
+  const location = worldLocation(row, worlds)
+  return location ? `${location.world}-${location.level}` : String(row.index)
+}
+
+export function worldSelection(selection, worlds) {
+  if (!selection) return ''
+  const world = worlds?.find((entry) => entry.range === selection)?.world
+  return world == null ? `Stages ${selection}` : `World ${world}`
 }

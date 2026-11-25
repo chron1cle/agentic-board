@@ -19,6 +19,8 @@ class CatalogTest(unittest.TestCase):
         stages = self.catalog["board"]["stages"]
         self.assertEqual([row["id"] for row in stages], [stage.id for stage in self.board.stages])
         self.assertTrue(all(row["description"] and row["measurement"] for row in stages))
+        self.assertEqual([(row["world"], row["level"]) for row in stages],
+                         [(world, level) for world in (1, 2) for level in range(1, 11)])
         self.assertEqual({row["id"] for row in self.catalog["connectors"]}, set(REGISTRY))
 
     def test_routing_tests_have_distinct_explanations_in_three_groups(self):

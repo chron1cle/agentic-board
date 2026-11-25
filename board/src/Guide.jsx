@@ -33,7 +33,10 @@ function StageCards({ stages }) {
         const region = regionOf(stage.region)
         return (
           <article key={stage.id} className="guide-card" style={{ '--card-accent': region.color }}>
-            <p className="guide-card-kicker">Stage {stage.number} · {region.label} · Tier {stage.tier}</p>
+            <p className="guide-card-kicker">
+                {stage.world != null ? `World ${stage.world} · Level ${stage.world}-${stage.level}` : `Stage ${stage.number}`}
+                {' · '}{region.label} · Tier {stage.tier}
+              </p>
             {stage.routingGroup ? <h5>{stage.name}</h5> : <h3>{stage.name}</h3>}
             {stage.description && <p>{stage.description}</p>}
             <p className="guide-check-label">How it’s measured</p>
@@ -60,7 +63,10 @@ export function TestsGuide({ board }) {
     .filter((stage) => [
       stage.id, stage.name, regionOf(stage.region).label, stage.description, stage.measurement,
       ...stage.checks.map(methodLabel),
+      stage.world != null ? `${stage.world}-${stage.level} world ${stage.world}` : '',
     ].some((field) => field?.toLowerCase().includes(filter)))
+  const routingStages = stages.filter((stage) => stage.routingGroup)
+  const routingWorld = routingStages[0]?.world
 
   return (
     <main className="guide">
@@ -80,12 +86,14 @@ export function TestsGuide({ board }) {
         the harness receives the grader’s feedback from earlier attempts at that stage.
         Earlier edits are discarded. A submission clears the stage when it passes every
         required check. Base points are adjusted for the clearing attempt and tool budget.
+        World scores average the share of available points earned on each stage, so both
+        worlds use the same 0–100 scale.
       </p>
       <StageCards stages={stages.filter((stage) => !stage.routingGroup)} />
-      {stages.some((stage) => stage.routingGroup) && (
+      {routingStages.length > 0 && (
         <section className="guide-routing" aria-labelledby="routing-heading">
           <div className="guide-intro">
-            <h3 id="routing-heading">Summit routing tests</h3>
+            <h3 id="routing-heading">{routingWorld != null ? `World ${routingWorld} · ` : ''}Summit routing tests</h3>
             <p>
               Think of a map of toll roads and switches. Each level adds a rule and keeps the
               earlier ones. The program must give the cheapest valid trip, or report that no trip is possible.
@@ -98,7 +106,7 @@ export function TestsGuide({ board }) {
             </p>
           </div>
           {ROUTING_GROUPS.map(({ id, title }) => {
-            const group = stages.filter((stage) => stage.routingGroup === id)
+            const group = routingStages.filter((stage) => stage.routingGroup === id)
             return group.length > 0 && (
               <section key={id} aria-labelledby={`routing-${id}`}>
                 <h4 id={`routing-${id}`} className="guide-section-title">{title}</h4>
@@ -128,7 +136,8 @@ export function HowToGuide({ connectors }) {
         <pre>python3 -m engine run --harness codex --limit 1</pre>
         <p>
           Use <code>--model</code> to choose a model, <code>--only</code> to try a specific stage,
-          and <code>--harness-bin</code> to override the executable. Use the same board version
+          <code>--world 1</code> or <code>--world 2</code> to run one world, and{' '}
+          <code>--harness-bin</code> to override the executable. Use the same board version
           and seed when comparing full runs.
         </p>
         <h3>Watch the results</h3>

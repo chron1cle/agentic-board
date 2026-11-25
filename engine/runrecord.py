@@ -56,6 +56,10 @@ class RunRecord:
     board_size: int | None = None
     selected_stages: int | None = None
     status: str = "benchmark"
+    selection: str | None = None
+    first_stage: int = 1
+    score_segments: list[dict] = field(default_factory=list)
+    world_levels: dict[int, dict[str, int]] = field(default_factory=dict)
 
     # -- derived metrics ---------------------------------------------------
     @property
@@ -97,10 +101,11 @@ class RunRecord:
         """Score after each stage. This is what the replay button animates."""
         running = 0.0
         out = []
-        for index, stage in enumerate(self.stages, start=1):
+        for index, stage in enumerate(self.stages, start=self.first_stage):
             running = round(running + stage.points, 2)
             out.append({
                 "index": index,
+                **self.world_levels.get(index, {}),
                 "stage": stage.id,
                 "name": stage.name,
                 "tier": stage.tier,
@@ -127,6 +132,8 @@ class RunRecord:
             "board_version": self.board_version,
             "seed": self.seed,
             "status": self.status,
+            "selection": self.selection,
+            "scoreSegments": self.score_segments,
             "started": self.started,
             "finished": self.finished,
             "notes": self.notes,

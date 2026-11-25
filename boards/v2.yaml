@@ -1,6 +1,9 @@
 id: agentic-board
 version: "2"
 # The original spine followed by the Summit routing sequence.
+segments:
+  - [1, 10]
+  - [11, 20]
 stages:
   - s001-exact-edit
   - s002-json-repair

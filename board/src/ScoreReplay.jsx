@@ -1,10 +1,10 @@
 import { useId, useMemo } from 'react'
-import { regionOf, resolvedIndex, scoreAt } from './layout.js'
+import { levelLabel, regionOf, resolvedIndex, scoreAt } from './layout.js'
 
 /**
  * Show the recorded score path with completed stages highlighted.
  */
-export default function ScoreReplay({ timeline, progress }) {
+export default function ScoreReplay({ timeline, progress, worlds }) {
   const clipId = useId()
   const W = 900
   const H = 420
@@ -66,7 +66,7 @@ export default function ScoreReplay({ timeline, progress }) {
                 </text>
               ) : null}
               <text x={x + w / 2} y={H - pad.b + 18} textAnchor="middle" className="tick">
-                {i + 1}
+                {levelLabel(row, worlds)}
               </text>
             </g>
           )

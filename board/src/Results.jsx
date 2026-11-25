@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react'
-import { regionOf } from './layout.js'
+import SegmentScores from './SegmentScores.jsx'
+import { regionOf, worldSelection } from './layout.js'
 
 const STATUS = {
   archive: 'Archived runs',
@@ -11,13 +12,13 @@ const STATUS = {
 }
 
 function cohortOf(run) {
-  return JSON.stringify([run.board, run.boardVersion, run.seed, run.schema, run.status])
+  return JSON.stringify([run.board, run.boardVersion, run.seed, run.schema, run.status, run.selection || null])
 }
 
 const COLUMNS = [
   { key: 'harness', label: 'Harness', get: (r) => r.harness },
   { key: 'model', label: 'Model', get: (r) => r.model },
-  { key: 'stageReached', label: 'Stage', get: (r) => `${r.stageReached}/${r.boardSize}`, num: (r) => r.stageReached },
+  { key: 'stageReached', label: 'Cleared', get: (r) => `${r.stageReached}/${r.selectedStages || r.boardSize}`, num: (r) => r.stageReached },
   { key: 'points', label: 'Points', get: (r) => r.points, num: (r) => r.points },
   { key: 'firstTryRate', label: 'First-try', get: (r) => `${Math.round(r.firstTryRate * 100)}%`, num: (r) => r.firstTryRate },
   { key: 'feedbackUptake', label: 'Uptake', get: (r) => r.feedbackTrials ? `${Math.round(r.feedbackUptake * 100)}% (${r.feedbackTrials})` : '—', num: (r) => r.feedbackTrials ? r.feedbackUptake : -1 },
@@ -92,6 +93,7 @@ export default function Results({ index, current, onOpen, onReplay }) {
             {[...cohorts].map(([key, run]) => (
               <option key={key} value={key}>
                 {run.board} v{run.boardVersion} · seed {run.seed} · {STATUS[run.status] || 'Benchmark runs'}
+                {run.selection ? ` · ${worldSelection(run.selection, run.scoreSegments)}` : ''}
               </option>
             ))}
           </select>
@@ -109,6 +111,7 @@ export default function Results({ index, current, onOpen, onReplay }) {
                 {sort.key === c.key ? (sort.dir === -1 ? ' ▾' : ' ▴') : ''}
               </th>
             ))}
+            <th scope="col">World scores</th>
             <th>Shape</th>
           </tr>
         </thead>
@@ -132,6 +135,9 @@ export default function Results({ index, current, onOpen, onReplay }) {
                 </td>
               ))}
               <td>
+                <SegmentScores segments={row.scoreSegments} />
+              </td>
+              <td>
                 <Sparkline timeline={row.timeline || []} />
               </td>
             </tr>
@@ -147,7 +153,8 @@ export default function Results({ index, current, onOpen, onReplay }) {
         ))}
       </div>
       <p className="hint">
-        Sorting is per column. <b>Stage</b> is the headline metric: the highest stage cleared,
+        Each world is scored out of 100. Every level in the world contributes equally after
+        adjusting for its maximum points. <b>Cleared</b> counts stages passed,
         because a failed stage ends the run. <b>First-try</b> is the share of cleared stages won on
         attempt one; <b>Uptake</b> is how often a failed attempt turned into a pass on the next try.
       </p>

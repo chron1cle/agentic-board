@@ -4,6 +4,8 @@ import { Html, Line, OrbitControls, Stars } from '@react-three/drei'
 import * as THREE from 'three'
 import { RESOLUTION, layout, pieceAt, regionOf, resolvedIndex } from './layout.js'
 
+import { worldTheme } from './worldThemes.js'
+
 const GOLD = '#ffd780'
 const PASS = '#74efb4'
 const FAIL = '#ff796f'
@@ -57,37 +59,47 @@ function AttemptCrystal({ index, verdict, active, reducedMotion }) {
   )
 }
 
+function PlatformTrace({ sides, radius, color, height, intensity = 1, width = 0.025 }) {
+  if (!sides) return <OrbitRing radius={radius} width={width} color={color} position={[0, height, 0]} glow={intensity} />
+  const points = Array.from({ length: sides + 1 }, (_, i) => {
+    const angle = i * 2 * Math.PI / sides
+    return [Math.sin(angle) * radius, height, Math.cos(angle) * radius]
+  })
+  return <Line points={points} color={color} lineWidth={1.7} transparent opacity={Math.min(1, 0.45 + intensity)} />
+}
+
 const StageIsland = memo(function StageIsland({ row, active, resolved, gateway, onSelect }) {
-  const region = regionOf(row.region)
-  const color = resolved ? (row.cleared ? PASS : FAIL) : active ? GOLD : region.color
+  const theme = worldTheme(row.world)
+  const { sides, rockSides, rockRotation, insetSides, traceSides } = theme.platform
+  const accent = theme.accent || regionOf(row.region).color
+  const color = resolved ? (row.cleared ? PASS : FAIL) : active ? GOLD : accent
   return (
     <group position={row.position}>
       <group onClick={(event) => { event.stopPropagation(); onSelect(row.index0) }}>
         <mesh position={[0, -0.33, 0]}>
-          <cylinderGeometry args={[1.56, 1.36, 0.54, 8]} />
-          <meshStandardMaterial color="#263249" metalness={0.55} roughness={0.62} />
+          <cylinderGeometry args={[1.56, 1.36, 0.54, sides]} />
+          <meshStandardMaterial color={theme.deck} metalness={0.55} roughness={0.62} />
         </mesh>
-        <mesh position={[0, -1.05, 0]} rotation={[0, Math.PI / 8, 0]}>
-          <cylinderGeometry args={[1.35, 0.32, 1.0, 7]} />
-          <meshStandardMaterial color={region.color} roughness={0.95}
+        <mesh position={[0, -1.05, 0]} rotation={[0, rockRotation, 0]}>
+          <cylinderGeometry args={[1.35, 0.32, 1.0, rockSides]} />
+          <meshStandardMaterial color={theme.rock || accent} roughness={0.95}
             emissive={DARK} emissiveIntensity={0.3} />
         </mesh>
         <mesh position={[0, -0.58, 0]}>
-          <cylinderGeometry args={[1.4, 1.36, 0.08, 8]} />
+          <cylinderGeometry args={[1.4, 1.36, 0.08, sides]} />
           <meshStandardMaterial color={color} emissive={color}
             emissiveIntensity={active || resolved ? 0.65 : 0.14} />
         </mesh>
         <mesh position={[0, 0, 0]}>
-          <cylinderGeometry args={[1.28, 1.33, 0.16, 8]} />
-          <meshStandardMaterial color={DARK} metalness={0.35} roughness={0.45} />
+          <cylinderGeometry args={[1.28, 1.33, 0.16, sides]} />
+          <meshStandardMaterial color={theme.surface} metalness={0.35} roughness={0.45} />
         </mesh>
       </group>
-      <OrbitRing color={color} radius={1.11} position={[0, 0.09, 0]}
-        glow={active ? 1.3 : resolved ? 0.7 : 0.16} />
-      <OrbitRing color={region.color} radius={0.87} width={0.012}
-        position={[0, 0.087, 0]} glow={0.2} />
+      <PlatformTrace sides={traceSides} color={color} radius={1.11} height={0.09}
+        intensity={active ? 1.3 : resolved ? 0.7 : 0.16} />
+      <PlatformTrace sides={traceSides} color={accent} radius={0.87} height={0.087} intensity={0.2} width={0.012} />
       <mesh position={[0, 0.19, 0]} rotation={[0, row.angle, 0]}>
-        <cylinderGeometry args={[0.44, 0.54, 0.23, 6]} />
+        <cylinderGeometry args={[0.44, 0.54, 0.23, insetSides]} />
         <meshStandardMaterial color={color} emissive={color}
           emissiveIntensity={resolved || active ? 0.65 : 0.13} />
       </mesh>
@@ -101,7 +113,7 @@ const StageIsland = memo(function StageIsland({ row, active, resolved, gateway, 
               </mesh>
               <mesh position={[0, 0.32, 0]}>
                 <octahedronGeometry args={[0.18]} />
-                <meshStandardMaterial color={region.color} emissive={region.color}
+                <meshStandardMaterial color={accent} emissive={accent}
                   emissiveIntensity={active ? 1.2 : 0.35} />
               </mesh>
             </group>
@@ -168,14 +180,14 @@ function Burst({ row, age, final }) {
   )
 }
 
-function FollowCamera({ position, controls, reducedMotion }) {
+function FollowCamera({ position, controls, reducedMotion, viewOffset = [9, 7, 12] }) {
   const target = useRef(new THREE.Vector3())
   const movement = useMemo(() => new THREE.Vector3(), [])
   const { camera } = useThree()
   useLayoutEffect(() => {
     target.current.set(...position)
     controls.current.target.copy(target.current)
-    camera.position.copy(target.current).add(new THREE.Vector3(9, 7, 12))
+    camera.position.copy(target.current).add(new THREE.Vector3(...viewOffset))
     controls.current.update()
     // The initial view is applied once. Later updates preserve manual orbit and zoom.
   }, [camera, controls])
@@ -216,22 +228,33 @@ function WorkOrbit({ row, activity }) {
 }
 
 const Bridge = memo(function Bridge({ from, to, visited }) {
+  const theme = worldTheme(to.world)
   const points = [from.position, to.position].map(([x, y, z]) => [x, y - 0.32, z])
   return (
     <group>
-      <Line points={points} color="#182844" lineWidth={7} />
-      <Line points={points} color={visited ? regionOf(to.region).color : '#455570'}
+      <Line points={points} color={theme.bridge} lineWidth={7} />
+      <Line points={points} color={visited ? theme.accent || regionOf(to.region).color : theme.bridgeIdle}
         lineWidth={2} dashed dashSize={0.27} gapSize={0.22} />
     </group>
   )
 })
 
-export default function Scene({ timeline, progress, frame, activity, playing, reducedMotion, onSelect }) {
-  const points = useMemo(() => layout(timeline), [timeline])
+export default function Scene({
+  timeline, worlds, progress = -1, frame, activity, playing, reducedMotion, onSelect,
+  preview = false, overview = false,
+}) {
+  const points = useMemo(() => layout(timeline, worlds), [timeline, worlds])
   const controls = useRef()
   const position = pieceAt(points, frame, reducedMotion)
   const current = points[frame.index]
   const resolved = Math.min(points.length - 1, resolvedIndex(progress))
+  const bounds = useMemo(() => {
+    const box = new THREE.Box3().setFromPoints(points.map((row) => new THREE.Vector3(...row.position)))
+    return { center: box.getCenter(new THREE.Vector3()).toArray(),
+      size: box.getSize(new THREE.Vector3()).length() }
+  }, [points])
+  const { size } = useThree()
+  const distance = Math.max(13, bounds.size * 0.96 / Math.min(1, size.width / Math.max(size.height, 1)))
   const lastResolved = points[resolved]
   const age = lastResolved ? Math.max(0, progress - resolved + 1 - RESOLUTION) / 0.52 : 1
 
@@ -244,14 +267,14 @@ export default function Scene({ timeline, progress, frame, activity, playing, re
       <Stars radius={70} depth={40} count={2300} factor={3.2} fade speed={reducedMotion ? 0 : 0.35} />
 
       {points.slice(1).map((row, i) => (
-        <Bridge key={row.stage} from={points[i]} to={row} visited={resolved >= i} />
+        <Bridge key={row.stage} from={points[i]} to={row} visited={preview || resolved >= i} />
       ))}
       {points.map((row, i) => (
-        <StageIsland key={row.stage} row={row} active={row === current}
-          gateway={regionOf(points[i - 1]?.region).label !== regionOf(row.region).label}
+        <StageIsland key={row.stage} row={row} active={!overview && row === current}
+          gateway={points[i - 1]?.world !== row.world || regionOf(points[i - 1]?.region).label !== regionOf(row.region).label}
           resolved={resolved >= row.index0} onSelect={onSelect} />
       ))}
-      {current && frame.arrived && (
+      {!preview && current && frame.arrived && (
         <group position={current.position}>
           <Attempts results={frame.attempts} active={frame.attempting} reducedMotion={reducedMotion} />
           <Html center position={[0, 2.32, 0]} className="node-label" style={{ pointerEvents: 'none' }}>
@@ -261,16 +284,18 @@ export default function Scene({ timeline, progress, frame, activity, playing, re
           </Html>
         </group>
       )}
-      {current && frame.attempting && !reducedMotion && activity.attempt?.started !== false && (
+      {!preview && current && frame.attempting && !reducedMotion && activity.attempt?.started !== false && (
         <WorkOrbit row={current} activity={activity} />
       )}
-      {playing && !reducedMotion && age < 1 && (
+      {!preview && playing && !reducedMotion && age < 1 && (
         <Burst row={lastResolved} age={age} final={lastResolved.index0 === points.length - 1} />
       )}
 
       <Pilot position={position} reducedMotion={reducedMotion} />
-      <OrbitControls ref={controls} enablePan={false} minDistance={5} maxDistance={48} />
-      <FollowCamera position={position} controls={controls} reducedMotion={reducedMotion} />
+      <OrbitControls ref={controls} enablePan={false} minDistance={5} maxDistance={overview ? distance * 2 : 48} />
+      <FollowCamera key={overview ? 'overview' : 'follow'} position={overview ? bounds.center : position}
+        viewOffset={overview ? [distance * 0.72, distance * 0.68, distance * 0.57] : undefined}
+        controls={controls} reducedMotion={reducedMotion} />
     </>
   )
 }

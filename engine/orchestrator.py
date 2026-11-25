@@ -20,7 +20,7 @@ from .feedback import (AttemptRecord, VERDICT_BUDGET, VERDICT_ERROR, VERDICT_FAI
 from .harness.base import HarnessAdapter, HarnessRequest
 from .runrecord import RunRecord, StageResult
 from .sandbox import Sandbox
-from .scoring import score_stage
+from .scoring import score_stage, segment_scores
 from .spec import Board, SpecError, Stage
 
 
@@ -35,9 +35,26 @@ class RunConfig:
     limit: int | None = None
     only: str | None = None
     keep_workspace: bool = True
+    segment: str | None = None
+    world: int | None = None
 
     def stages(self) -> list[Stage]:
         stages = list(self.board.stages)
+        if self.world is not None:
+            if self.segment or self.only or self.limit is not None:
+                raise SpecError("--world cannot be combined with --segment, --limit, or --only")
+            if not 1 <= self.world <= len(self.board.segments):
+                raise SpecError(f"unknown world {self.world}; this board has {len(self.board.segments)} worlds")
+            segment = self.board.segments[self.world - 1]
+            return stages[segment.first - 1:segment.last]
+        if self.segment:
+            if self.only or self.limit is not None:
+                raise SpecError("--segment cannot be combined with --limit or --only")
+            for segment in self.board.segments:
+                if segment.id == self.segment:
+                    return stages[segment.first - 1:segment.last]
+            available = ", ".join(segment.id for segment in self.board.segments)
+            raise SpecError(f"unknown segment {self.segment!r}; available: {available or 'none'}")
         if self.only:
             picked = [s for s in stages if s.id == self.only or s.id.endswith(self.only)]
             if not picked:
@@ -110,7 +127,7 @@ class Orchestrator:
         result = StageResult(id=stage.id, name=stage.name, tier=stage.tier,
                              region=stage.region)
         self.emit("stage.entered", index=index, stage=stage.id, tier=stage.tier,
-                  name=stage.name)
+                  name=stage.name, **self.config.board.world_level(index))
 
         attempts: list[AttemptRecord] = []
         # DESIGN.md §5: the wall clock budget is per stage, across all its
@@ -237,17 +254,24 @@ class Orchestrator:
             status = "control"
         elif self.config.only or len(stages) != self.config.board.size:
             status = "partial"
+        selected_ids = [stage.id for stage in stages]
+        first_stage = self.config.board.stages.index(stages[0]) + 1
+        partial = len(stages) != self.config.board.size
+        selection = f"{first_stage}-{first_stage + len(stages) - 1}" if partial else None
         record = RunRecord(
             run=self.run_id, harness=self.config.harness,
             model=self.config.model or getattr(self.adapter, "label", lambda: None)(),
             board=self.config.board.id, board_version=self.config.board.version,
             seed=self.config.seed, board_size=self.config.board.size,
-            selected_stages=len(stages), status=status)
+            selected_stages=len(stages), status=status, selection=selection, first_stage=first_stage,
+            world_levels={i: self.config.board.world_level(i)
+                          for i in range(first_stage, first_stage + len(stages))})
         self.emit("run.started", harness=record.harness, model=record.model,
                   board=record.board, stages=len(stages))
 
         for index, stage in enumerate(stages, start=1):
-            stage_result = self.play_stage(stage, index)
+            position = first_stage + index - 1
+            stage_result = self.play_stage(stage, position)
             record.stages.append(stage_result)
             if stage_result.status:
                 record.status = stage_result.status
@@ -258,15 +282,16 @@ class Orchestrator:
                 # the level achieved; there is no playing past a locked door.
                 if index < len(stages):
                     record.notes.append(
-                        f"run ended at stage {index} ({stage.id}); "
+                        f"run ended at stage {position} ({stage.id}); "
                         f"{len(stages) - index} stage(s) not played")
                 break
 
         if any(not attempt.tools_reported or not attempt.tokens_reported
                for stage in record.stages for attempt in stage.attempts):
             record.notes.append("One or more attempts omitted tool or token accounting.")
+        record.score_segments = segment_scores(self.config.board, selected_ids, record.cumulative_score())
         record.finished = time.time()
         self.emit("run.ended", stageReached=record.stage_reached,
-                  points=record.points, stoppedAt=record.stopped_at)
+                  points=record.points, stoppedAt=record.stopped_at, selectedStages=len(stages))
         record.save(self.run_dir)
         return record

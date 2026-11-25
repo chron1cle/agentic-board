@@ -182,16 +182,33 @@ def _validate_oracle_files(stage: Stage, spec: OracleSpec, where: str) -> None:
             raise SpecError(f"{where}: mutation oracle needs test_command")
 
 
+@dataclass(frozen=True)
+class BoardSegment:
+    first: int
+    last: int
+
+    @property
+    def id(self) -> str:
+        return f"{self.first}-{self.last}"
+
+
 @dataclass
 class Board:
     id: str
     version: str
     stages: list[Stage]
     path: Path | None = None
+    segments: list[BoardSegment] = field(default_factory=list)
 
     @property
     def size(self) -> int:
         return len(self.stages)
+
+    def world_level(self, position: int) -> dict[str, int]:
+        for world, segment in enumerate(self.segments, start=1):
+            if segment.first <= position <= segment.last:
+                return {"world": world, "level": position - segment.first + 1}
+        return {}
 
 
 def load_board(path: Path) -> Board:
@@ -215,5 +232,17 @@ def load_board(path: Path) -> Board:
     if dupes:
         raise SpecError(f"{path}: duplicate stage ids {sorted(dupes)}")
 
+    segments = []
+    last = 0
+    for bounds in raw.get("segments", []):
+        if (not isinstance(bounds, list) or len(bounds) != 2
+                or any(type(n) is not int for n in bounds)):
+            raise SpecError(f"{path}: each segment requires two stage numbers")
+        first, end = bounds
+        if not last < first <= end <= len(stages):
+            raise SpecError(f"{path}: segments must be ordered, disjoint, and within the board")
+        segments.append(BoardSegment(first, end))
+        last = end
+
     return Board(id=raw.get("id", path.stem), version=str(raw.get("version", "0")),
-                 stages=stages, path=path)
+                 stages=stages, path=path, segments=segments)

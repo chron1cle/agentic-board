@@ -114,7 +114,7 @@ CONNECTORS = {
 }
 
 
-def stage_entry(stage):
+def stage_entry(stage, world_level):
     description, measurement = TASKS.get(stage.id, (None, None))
     routing_group = None
     if stage.id in ROUTING_RULES:
@@ -133,7 +133,7 @@ def stage_entry(stage):
         "description": description, "measurement": measurement, "checks": checks,
         "capabilities": stage.capabilities, "attempts": stage.attempts,
         "seconds": stage.timeout_s, "toolBudget": stage.tool_budget, "basePoints": stage.value(),
-        "seeded": stage.seedable, "routingGroup": routing_group,
+        "seeded": stage.seedable, "routingGroup": routing_group, **world_level,
     }
 
 
@@ -147,6 +147,7 @@ def public_catalog(board):
         })
     return {
         "board": {"id": board.id, "version": board.version,
-                  "stages": [stage_entry(stage) for stage in board.stages]},
+                  "stages": [stage_entry(stage, board.world_level(i))
+                             for i, stage in enumerate(board.stages, start=1)]},
         "connectors": connectors,
     }

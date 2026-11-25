@@ -10,6 +10,8 @@ version: "1"
 #   tier 4  debug a real concurrency and retry bug set under hidden tests
 #   tier 5  write tests that survive mutation scoring
 #   tier 6  a migration where the semantics, not just the names, change
+segments:
+  - [1, 10]
 stages:
   - s001-exact-edit
   - s002-json-repair

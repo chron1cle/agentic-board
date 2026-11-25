@@ -1,9 +1,12 @@
+import { worldSelection } from './layout.js'
+
 function runLabel(entry) {
   return [
     entry.run,
     [entry.harness, entry.model].filter(Boolean).join(' / '),
     entry.boardVersion ? `v${entry.boardVersion}` : '',
-    entry.boardSize ? `${entry.stageReached}/${entry.boardSize} cleared` : '',
+    worldSelection(entry.selection, entry.scoreSegments),
+    entry.boardSize ? `${entry.stageReached}/${entry.selectedStages || entry.boardSize} cleared` : '',
   ].filter(Boolean).join(' · ')
 }
 

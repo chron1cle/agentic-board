@@ -99,5 +99,23 @@ class MetricTest(unittest.TestCase):
         self.assertEqual(feedback_uptake([Result(True, 1, [AttemptRecord(1, VERDICT_PASS)])]), 0.0)
 
 
+class SegmentScoringTest(unittest.TestCase):
+    def test_same_attempt_fraction_in_both_halves(self):
+        from pathlib import Path
+
+        from engine.scoring import segment_scores
+        from engine.spec import load_board
+
+        board = load_board(Path(__file__).resolve().parents[1] / "boards" / "v2.yaml")
+        ids = [stage.id for stage in board.stages]
+        rows = [
+            {"stage": stage.id, "cleared": True,
+             "points": score_stage(stage.tier, 1, base=stage.score_base)}
+            for stage in [*board.stages[:5], *board.stages[10:15]]
+        ]
+        self.assertEqual([score["score"] for score in segment_scores(board, ids, rows)], [50, 50])
+        self.assertEqual([score["range"] for score in segment_scores(board, ids[10:], rows)], ["11-20"])
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -2,15 +2,18 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { Canvas } from '@react-three/fiber'
 import { loadCatalog, loadIndex, loadRun } from './api.js'
 import {
-  regionOf, replayActivity, replayActivityRows, replayFrame, replayProgress,
-  replaySchedule, replaySeconds, resolvedIndex, scoreAt,
+  levelLabel, regionOf, replayActivity, replayActivityRows, replayFrame, replayProgress,
+  replaySchedule, replaySeconds, resolvedIndex, scoreAt, worldLocation, worldSelection,
 } from './layout.js'
 import Scene from './Scene.jsx'
 import Results from './Results.jsx'
 import RunPicker from './RunPicker.jsx'
+import WorldViewer from './WorldViewer.jsx'
 import ScoreReplay from './ScoreReplay.jsx'
+import SegmentScores from './SegmentScores.jsx'
 import Activity from './Activity.jsx'
 import { HowToGuide, TestsGuide } from './Guide.jsx'
+import { worldTheme } from './worldThemes.js'
 
 const SPEEDS = [0.5, 1, 2, 3, 4, 5, 10]
 
@@ -52,7 +55,7 @@ function useReducedMotion() {
   return reduced
 }
 
-const VIEWS = ["board", "replay", "results", "tests", "how-to"]
+const VIEWS = ["board", "replay", "results", "worlds", "tests", "how-to"]
 
 function viewFromHash() {
   const hash = (window.location.hash || "").replace(/^#\/?/, "")
@@ -74,7 +77,7 @@ export default function App() {
   const [speed, setSpeed] = useState(1)
   const reducedMotion = useReducedMotion()
   const watching = view === 'board' || view === 'replay'
-  const guide = view === 'tests' || view === 'how-to'
+  const catalogView = ['worlds', 'tests', 'how-to'].includes(view)
   const hud = useRef(null)
 
   const timeline = run?.timeline || []
@@ -107,8 +110,8 @@ export default function App() {
 
   useEffect(refresh, [refresh])
   useEffect(() => {
-    if (guide && !catalog) refreshCatalog()
-  }, [guide, catalog, refreshCatalog])
+    if (catalogView && !catalog) refreshCatalog()
+  }, [catalogView, catalog, refreshCatalog])
 
   // The view lives in the URL, so a replay of a specific run is a link you can
   // paste to someone: #/replay
@@ -162,7 +165,11 @@ export default function App() {
   const resolved = resolvedIndex(progress)
   const complete = resolved >= length - 1
   const cleared = timeline.reduce((count, row, i) => count + Number(i <= resolved && row.cleared), 0)
+  const worldScores = entry?.scoreSegments ?? run?.scoreSegments
+  const selection = worldSelection(run?.selection ?? entry?.selection, worldScores)
   const current = frame.row
+  const location = current && worldLocation(current, worldScores)
+  const theme = worldTheme(location?.world)
   const verdict = frame.resolved
     ? current?.cleared ? `Cleared on attempt ${current.attempts}` : 'Run stopped'
     : frame.arrived ? 'Attempts in progress' : 'Approaching stage'
@@ -183,9 +190,10 @@ export default function App() {
           <button className={view === 'results' ? 'on' : ''} onClick={() => go('results')}>
             Results {index ? `(${index.runs.length})` : ''}
           </button>
+          <button className={view === 'worlds' ? 'on' : ''} onClick={() => go('worlds')}>Worlds</button>
           <button className={view === 'tests' ? 'on' : ''} onClick={() => go('tests')}>Tests</button>
           <button className={view === 'how-to' ? 'on' : ''} onClick={() => go('how-to')}>How to</button>
-          <button onClick={guide ? refreshCatalog : refresh}>Reload</button>
+          <button onClick={catalogView ? refreshCatalog : refresh}>Reload</button>
         </nav>
       </header>
 
@@ -193,11 +201,12 @@ export default function App() {
         <RunPicker runs={index?.runs || []} current={entry?.run} loading={loadingRun} error={runError}
           onSelect={openRun} onReplay={restart} />
       )}
-      {guide ? (
+      {catalogView ? (
         catalogError ? (
           <div className="error" role="alert"><b>Guide unavailable.</b><p>{catalogError}</p></div>
         ) : catalog ? (
-          view === 'tests' ? <TestsGuide board={catalog.board} /> : <HowToGuide connectors={catalog.connectors} />
+          view === 'worlds' ? <WorldViewer board={catalog.board} reducedMotion={reducedMotion} /> :
+            view === 'tests' ? <TestsGuide board={catalog.board} /> : <HowToGuide connectors={catalog.connectors} />
         ) : <div className="loading">Loading guide…</div>
       ) : error ? (
         <div className="error">
@@ -215,10 +224,11 @@ export default function App() {
         <>
           <div className="stage-area">
             {view === 'board' ? (
-              <div className="canvas-wrap">
+              <div className="canvas-wrap" style={{ '--sky-top': theme.sky[0], '--sky-bottom': theme.sky[1] }}>
                 <Canvas camera={{ position: [16, 14, 22], fov: 55 }} dpr={[1, 2]}>
                   <Scene
                     timeline={timeline}
+                    worlds={worldScores}
                     progress={progress}
                     frame={frame}
                     activity={activity}
@@ -228,14 +238,14 @@ export default function App() {
                   />
                 </Canvas>
                 {current && (
-                  <div className="board-caption" style={{ '--region-color': regionOf(current.region).color }}>
-                    <span>{regionOf(current.region).label}</span>
-                    <b>{current.index}. {current.name || current.stage}</b>
+                  <div className="board-caption" style={{ '--region-color': theme.accent || regionOf(current.region).color }}>
+                    <span>{location && `World ${location.world} · `}{regionOf(current.region).label}</span>
+                    <b>{levelLabel(current, worldScores)} · {current.name || current.stage}</b>
                   </div>
                 )}
               </div>
             ) : (
-              <ScoreReplay timeline={timeline} progress={Math.min(length - 1, progress)} />
+              <ScoreReplay timeline={timeline} worlds={worldScores} progress={Math.min(length - 1, progress)} />
             )}
 
             <aside className="hud" ref={hud}>
@@ -245,7 +255,7 @@ export default function App() {
               </div>
               {current ? (
                 <div className="now">
-                  <b>{current.index}. {current.name}</b>
+                  <b>{levelLabel(current, worldScores)} · {current.name}</b>
                   <span className="region">{regionOf(current.region).label}</span>
                   <span className={`verdict ${frame.resolved ? (current.cleared ? 'pass' : 'fail') : 'pending'}`}>
                     {verdict}
@@ -270,8 +280,9 @@ export default function App() {
               ) : null}
               <Activity activity={activity} frame={frame} reducedMotion={reducedMotion} />
               <dl className="run-details">
-                <dt>Stage reached</dt>
-                <dd>{cleared} / {run.final.boardSize}</dd>
+                {selection && <><dt>Selected run</dt><dd>{selection}</dd></>}
+                <dt>{selection ? 'Stages cleared' : 'Stage reached'}</dt>
+                <dd>{cleared} / {run.final.selectedStages || run.final.boardSize}</dd>
                 <dt>{!complete || ['complete', 'selection_complete'].includes(run.final.stoppedAt) ? 'Result' : 'Stopped at'}</dt>
                 <dd>{!complete ? '—' : run.final.stoppedAt === 'complete' ? 'board complete' :
                   run.final.stoppedAt === 'selection_complete' ? 'selection complete' : run.final.stoppedAt}</dd>
@@ -282,6 +293,12 @@ export default function App() {
                 <dt>Run status</dt>
                 <dd>{(run.status || 'archive').replaceAll('_', ' ')}</dd>
               </dl>
+              {complete && Boolean(worldScores?.length) && (
+                <div className="segment-summary">
+                  <b>World scores</b>
+                  <SegmentScores segments={worldScores} />
+                </div>
+              )}
               <ol className="spine">
                 {timeline.map((row, i) => (
                   <li key={row.stage}>
@@ -291,7 +308,7 @@ export default function App() {
                       aria-current={i === frame.index ? 'step' : undefined}
                     >
                       <i style={{ background: regionOf(row.region).color }} />
-                      <span>{row.index}. {row.name || row.stage}</span>
+                      <span>{levelLabel(row, worldScores)} · {row.name || row.stage}</span>
                       <b>{resolved >= i && row.cleared ? `+${row.points}` : '—'}</b>
                     </button>
                   </li>

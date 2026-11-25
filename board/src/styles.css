@@ -439,8 +439,8 @@ code {
 .canvas-wrap {
   isolation: isolate;
   background:
-    radial-gradient(ellipse at 70% 22%, #25233f 0, transparent 58%),
-    radial-gradient(ellipse at 14% 88%, #142d40 0, transparent 52%),
+    radial-gradient(ellipse at 70% 22%, var(--sky-top, #25233f) 0, transparent 58%),
+    radial-gradient(ellipse at 14% 88%, var(--sky-bottom, #142d40) 0, transparent 52%),
     #080f1b;
 }
 
@@ -836,4 +836,52 @@ code {
   .run-picker { padding: 7px 10px; }
   .run-picker-field { flex-basis: 100%; }
   .results-heading label { align-items: flex-start; flex-direction: column; }
+}
+
+.segment-summary {
+  margin-top: 10px;
+  font-size: 12px;
+}
+
+.segment-scores {
+  display: grid;
+  gap: 3px;
+  margin: 4px 0;
+  padding: 0;
+  list-style: none;
+  font: 11px/1.4 var(--mono);
+}
+
+.segment-scores li {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.segment-scores strong { color: var(--accent); }
+
+.world-viewer {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.world-viewer-toolbar {
+  justify-content: flex-start;
+  padding: 8px 16px;
+}
+
+.world-viewer-toolbar h2 { margin: 0; font-size: 15px; }
+
+.world-viewer-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.world-sidebar p { margin: 8px 0; }
+
+@media (max-width: 550px) {
+  .world-viewer-toolbar { flex-direction: row; align-items: center; }
 }

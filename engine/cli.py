@@ -24,6 +24,7 @@ from .catalog import public_catalog
 from .orchestrator import Orchestrator, RunConfig
 from .runrecord import RunRecord
 from .sandbox import Sandbox
+from .scoring import segment_scores
 from .spec import Board, SpecError, load_board
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -121,7 +122,7 @@ def cmd_run(args) -> int:
 
     config = RunConfig(board=board, harness=harness_name, model=args.model,
                        seed=args.seed, out_dir=Path(args.out), limit=args.limit,
-                       only=args.only, run_id=args.run_id)
+                       only=args.only, run_id=args.run_id, segment=args.segment, world=args.world)
     verbose = not args.quiet
 
     def show(event: dict) -> None:
@@ -129,7 +130,8 @@ def cmd_run(args) -> int:
             return
         kind = event["event"]
         if kind == "stage.entered":
-            print(f"\n[{event['index']}/{board.size}] {event['stage']} — {event['name']}"
+            location = f"{event['world']}-{event['level']}" if "world" in event else f"{event['index']}/{board.size}"
+            print(f"\n[{location}] {event['stage']} — {event['name']}"
                   f"  (tier {event['tier']})")
         elif kind == "attempt.started":
             print(f"    attempt {event['attempt']} …", flush=True)
@@ -144,7 +146,7 @@ def cmd_run(args) -> int:
         elif kind == "stage.failed":
             print(f"    STAGE FAILED after {event['attempts']} attempt(s) — run over")
         elif kind == "run.ended":
-            print(f"\nrun ended: stage {event['stageReached']}/{board.size} reached, "
+            print(f"\nrun ended: {event['stageReached']}/{event['selectedStages']} stages cleared, "
                   f"{event['points']} points")
 
     started = time.monotonic()
@@ -168,13 +170,17 @@ def print_summary(record: RunRecord) -> None:
     print("-" * 68)
     for row in record.cumulative_score():
         mark = "PASS" if row["cleared"] else "FAIL"
-        print(f"  {row['index']:>2}. {row['stage']:<26} {mark:<4} "
+        level = f"{row['world']}-{row['level']}" if "world" in row else str(row["index"])
+        print(f"  {level:>4}  {row['stage']:<26} {mark:<4} "
               f"att {row['attempts']}  +{row['points']:>6}  "
               f"total {row['cumulative']:>7}")
     final = record.as_dict()["final"]
     print("-" * 68)
-    print(f"  stage reached   {final['stageReached']} / {final['boardSize']}")
+    print(f"  stages cleared  {final['stageReached']} / {final['selectedStages'] or final['boardSize']}")
     print(f"  points          {final['points']}")
+    for segment in record.score_segments:
+        label = f"world {segment['world']}" if "world" in segment else f"stages {segment['range']}"
+        print(f"  {label:<12} {segment['score']:g}/100")
     print(f"  first-try rate  {final['firstTryRate']:.0%}")
     trials = final["feedbackTrials"]
     uptake = f"{final['feedbackUptake']:.0%} ({trials} retries)" if trials else "—"
@@ -193,9 +199,13 @@ def cmd_report(args) -> int:
         return 1
     data = json.loads(path.read_text(encoding="utf-8"))
     print(json.dumps(data["final"], indent=2))
+    for segment in data.get("scoreSegments", []):
+        label = f"world {segment['world']}" if "world" in segment else f"stages {segment['range']}"
+        print(f"  {label:<12} {segment['score']:g}/100")
     for row in data["timeline"]:
         mark = "PASS" if row["cleared"] else "FAIL"
-        print(f"  {row['index']:>2}. {row['stage']:<26} {mark:<4} att {row['attempts']} "
+        level = f"{row['world']}-{row['level']}" if "world" in row else str(row["index"])
+        print(f"  {level:>4}  {row['stage']:<26} {mark:<4} att {row['attempts']} "
               f"+{row['points']:>6} total {row['cumulative']:>7}")
     return 0
 
@@ -204,6 +214,7 @@ def write_index(out_dir: Path) -> Path:
     """Aggregate every run into runs/index.json — the results viewer's data."""
     out_dir = Path(out_dir)
     entries = []
+    boards = [load_board(ROOT / "boards" / name) for name in ("v1.yaml", "v2.yaml")]
     for record_path in sorted(out_dir.glob("*/run.json")):
         try:
             data = json.loads(record_path.read_text(encoding="utf-8"))
@@ -212,6 +223,31 @@ def write_index(out_dir: Path) -> Path:
         final = data.get("final", {})
         attempts = [attempt for stage in data.get("stages", [])
                     for attempt in stage.get("attempts", [])]
+        scores = data.get("scoreSegments")
+        selection = data.get("selection")
+        selected_count = final.get("selectedStages")
+        if scores is None:
+            # Earlier records played a board prefix, or one individually selected stage.
+            scores = []
+            for board in boards:
+                if (board.id, board.version) != (data.get("board"), data.get("board_version")):
+                    continue
+                count = selected_count or final.get("boardSize")
+                timeline = data.get("timeline", [])
+                if (count not in {board.size, *(segment.last for segment in board.segments if segment.first == 1)}
+                        or not timeline or len(timeline) > count
+                        or any(row.get("stage") != stage.id for row, stage in zip(timeline, board.stages))):
+                    continue
+                scores = segment_scores(board, (stage.id for stage in board.stages[:count]), timeline)
+                if count != board.size:
+                    selection = f"1-{count}"
+                break
+        if scores and any("world" not in score for score in scores):
+            board = next((board for board in boards if (board.id, board.version) ==
+                          (data.get("board"), data.get("board_version"))), None)
+            if board:
+                worlds = {segment.id: number for number, segment in enumerate(board.segments, start=1)}
+                scores = [dict(score, world=worlds.get(score["range"])) for score in scores]
         entries.append({
             "run": data.get("run"),
             "harness": data.get("harness"),
@@ -220,6 +256,9 @@ def write_index(out_dir: Path) -> Path:
             "boardVersion": data.get("board_version"),
             "schema": data.get("schema", 1),
             "status": data.get("status", "archive"),
+            "selection": selection,
+            "selectedStages": selected_count,
+            "scoreSegments": scores,
             "seed": data.get("seed"),
             "started": data.get("started"),
             "path": f"{record_path.parent.name}/run.json",
@@ -251,7 +290,7 @@ def cmd_index(args) -> int:
     print(f"{len(data['runs'])} run(s) indexed -> {target}")
     for entry in data["runs"]:
         print(f"  {entry['harness']:<10} {str(entry['model']):<28} "
-              f"stage {entry['stageReached']}/{entry['boardSize']}  "
+              f"stages {entry['stageReached']}/{entry['selectedStages'] or entry['boardSize']}  "
               f"{entry['points']:>7} pts  first-try {entry['firstTryRate']:.0%}")
     return 0
 
@@ -347,8 +386,11 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--model", default=None)
     p.add_argument("--harness-bin", help="override the adapter executable; required for command")
     p.add_argument("--seed", type=int, default=1)
-    p.add_argument("--limit", type=int, default=None, help="play only the first N stages")
-    p.add_argument("--only", default=None, help="play a single stage by id")
+    scope = p.add_mutually_exclusive_group()
+    scope.add_argument("--limit", type=int, default=None, help="play only the first N stages")
+    scope.add_argument("--only", default=None, help="play a single stage by id")
+    scope.add_argument("--world", type=int, help="play a world independently, starting at level 1")
+    scope.add_argument("--segment", help="play a board segment such as 1-10 or 11-20")
     p.add_argument("--run-id", default=None)
     p.add_argument("--quiet", action="store_true")
     p.set_defaults(func=cmd_run)

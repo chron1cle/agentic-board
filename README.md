@@ -76,6 +76,13 @@ Base points are `100 × (1 + 0.5 × (tier − 1))`. Clear multipliers are 1.2, 0
 and 0.50 for attempts one through three, with penalties for exceeding the
 tool budget. A perfect v2 run earns 6,540 points.
 
+Board v2 has two ten-level worlds. The opening level is **1-1**, and the
+Summit begins at **2-1**. Each world reports a **score out of 100**. Each stage contributes
+its earned points divided by its own first-try maximum, and the world score
+averages those shares across its ten levels. Failed and unreached stages
+contribute zero. For example, five first-try clears at full points earn 50/100
+in either half. The original tier-weighted points remain available in the replay.
+
 Every stage ships two **controls**: a `fixed` workspace that must pass the oracle and
 an `empty` one that must fail it. A stage whose oracle accepts nothing is not a stage,
 so the controls are checked in CI:
@@ -188,6 +195,7 @@ Useful flags:
 | `--limit N` | play only the first N stages — good for a cheap calibration run |
 | `--harness-bin PATH` | override the executable for an adapter. Required for `command`. |
 | `--only s006-sessionizer` | one stage, for authoring or debugging |
+| `--world 1` or `--world 2` | run one world independently. The equivalent stage ranges are `--segment 1-10` and `--segment 11-20`. |
 | `--seed N` | selects hidden graph cases on levels 11–20. The v1 fixtures are static. |
 | `--out DIR` | where runs land (default `runs/`) |
 | `--quiet` | just the summary, no live event stream |
@@ -270,8 +278,14 @@ In the app:
   the spine while the cumulative score fills in. Speed control and a scrub bar.
 - **Results** — completed runs grouped by comparison cohort. Choose **Replay** to
   watch the run on the board.
+- **Worlds** — explore each world's layout and inspect its levels directly.
 - **Tests** — browse stage tasks, verification methods, scoring, and budgets.
 - **How to** — configure built-in adapters, connect a custom wrapper, and load results.
+
+World 1 uses an ascending spiral and World 2 uses a rising zigzag. Configure
+new world ranges in the board YAML and add their path, platform geometry,
+and palette to `board/src/worldThemes.js`. The same bot and replay controls
+follow the path for every world.
 
 ## Adding a stage
 
