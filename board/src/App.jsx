@@ -41,12 +41,19 @@ function useReplayClock(length, playing, speed, onTick) {
   return [progress, setProgress]
 }
 
+const VIEWS = ["board", "replay", "results"]
+
+function viewFromHash() {
+  const hash = (window.location.hash || "").replace(/^#\/?/, "")
+  return VIEWS.includes(hash) ? hash : "board"
+}
+
 export default function App() {
   const [index, setIndex] = useState(null)
   const [error, setError] = useState('')
   const [entry, setEntry] = useState(null)
   const [run, setRun] = useState(null)
-  const [view, setView] = useState('board')
+  const [view, setView] = useState(viewFromHash)
   const [playing, setPlaying] = useState(false)
   const [speed, setSpeed] = useState(1)
   const [scrub, setScrub] = useState(null)
@@ -63,6 +70,19 @@ export default function App() {
   }, [])
 
   useEffect(refresh, [refresh])
+
+  // The view lives in the URL, so a replay of a specific run is a link you can
+  // paste to someone: #/replay
+  const go = useCallback((next) => {
+    setView(next)
+    window.location.hash = `#/${next}`
+  }, [])
+
+  useEffect(() => {
+    const onHash = () => setView(viewFromHash())
+    window.addEventListener('hashchange', onHash)
+    return () => window.removeEventListener('hashchange', onHash)
+  }, [])
 
   const openRun = useCallback(
     async (next) => {
@@ -100,9 +120,9 @@ export default function App() {
           </span>
         </div>
         <nav>
-          <button className={view === 'board' ? 'on' : ''} onClick={() => setView('board')}>Board</button>
-          <button className={view === 'replay' ? 'on' : ''} onClick={() => setView('replay')}>Score replay</button>
-          <button className={view === 'results' ? 'on' : ''} onClick={() => setView('results')}>
+          <button className={view === 'board' ? 'on' : ''} onClick={() => go('board')}>Board</button>
+          <button className={view === 'replay' ? 'on' : ''} onClick={() => go('replay')}>Score replay</button>
+          <button className={view === 'results' ? 'on' : ''} onClick={() => go('results')}>
             Results {index ? `(${index.runs.length})` : ''}
           </button>
           <button onClick={refresh}>Reload</button>
@@ -115,7 +135,7 @@ export default function App() {
           <p>{error}</p>
         </div>
       ) : view === 'results' ? (
-        <Results index={index} current={entry} onOpen={openRun} onReplay={async (e) => { await openRun(e); setView('replay'); restart() }} />
+        <Results index={index} current={entry} onOpen={openRun} onReplay={async (e) => { await openRun(e); go('replay'); restart() }} />
       ) : !run ? (
         <div className="loading">loading run…</div>
       ) : (
@@ -156,7 +176,7 @@ export default function App() {
               </dl>
               {current ? (
                 <div className="now">
-                  <b>{current.index + 1}. {current.name}</b>
+                  <b>{current.index}. {current.name}</b>
                   <span className="region">{regionOf(current.region).label}</span>
                   <span className={current.cleared ? 'verdict pass' : 'verdict fail'}>
                     {current.cleared ? `cleared on attempt ${current.attempts}` : 'failed'}
@@ -177,7 +197,7 @@ export default function App() {
                     onClick={() => { setPlaying(false); setScrub(row.index) }}
                   >
                     <i style={{ background: regionOf(row.region).color }} />
-                    {row.index + 1}. {row.stage}
+                    {row.index}. {row.stage}
                     <b>{row.cleared ? `+${row.points}` : '—'}</b>
                   </li>
                 ))}
