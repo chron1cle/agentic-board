@@ -1,0 +1,4 @@
+session_id,client,requests,first_seen,paths
+s1,10.0.0.5,2,2026-11-23T08:00:00Z,/api/orders|/api/users
+s2,10.0.0.9,1,2026-11-23T08:10:00Z,/health
+s3,10.0.0.5,2,2026-11-23T09:00:00Z,/api/orders

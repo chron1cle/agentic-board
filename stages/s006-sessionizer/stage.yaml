@@ -1,0 +1,15 @@
+id: s006-sessionizer
+name: "The Session Weaver"
+tier: 3
+region: the-foundry
+capabilities: [build-from-spec, text-processing, edge-cases]
+brief_file: brief.md
+attempts: 3
+timeout_s: 420
+tool_budget: 30
+score: { base: 100 }
+oracles:
+  - kind: script
+    entry: checker.py
+    reveal: full
+    timeout_s: 120

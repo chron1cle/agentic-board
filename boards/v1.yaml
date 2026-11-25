@@ -1,0 +1,23 @@
+id: agentic-board
+version: "1"
+# Ten stages, easy to brutal. The order is a design-time guess: difficulty is
+# measured by empirical pass rate against the reference agents (DESIGN.md §6),
+# and calibration is expected to reshuffle this list.
+#
+#   tier 1  exact, mechanical edits
+#   tier 2  multi-file reasoning against a stated contract
+#   tier 3  build a tool from a specification, graded on unseen inputs
+#   tier 4  debug a real concurrency and retry bug set under hidden tests
+#   tier 5  write tests that survive mutation scoring
+#   tier 6  a migration where the semantics, not just the names, change
+stages:
+  - s001-exact-edit
+  - s002-json-repair
+  - s003-rename-symbol
+  - s004-offbyone
+  - s005-log-search
+  - s006-sessionizer
+  - s007-cli-spec
+  - s008-pipeline-fix
+  - s009-tests-that-test
+  - s010-codemod-migration

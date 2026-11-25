@@ -1,0 +1,5 @@
+id: smoke
+version: "1"
+# Minimal board used by the test suite to exercise the engine end to end.
+stages:
+  - s001-exact-edit

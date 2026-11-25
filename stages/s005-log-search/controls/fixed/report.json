@@ -1,0 +1,8 @@
+{
+  "errors": 38,
+  "unique_error_ips": 7,
+  "worst_ip": "10.0.1.7",
+  "worst_count": 7,
+  "slowest_ms": 900,
+  "slowest_path": "/api/checkout"
+}

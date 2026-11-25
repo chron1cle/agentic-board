@@ -1,0 +1,7 @@
+id: two
+version: "1"
+# Test fixture board: two tier-1 stages, used to prove the run stops at the
+# first locked door and continues when it opens.
+stages:
+  - s001-exact-edit
+  - s002-json-repair

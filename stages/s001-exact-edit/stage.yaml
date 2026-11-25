@@ -1,0 +1,19 @@
+id: s001-exact-edit
+name: "The Ledger of Whispers"
+tier: 1
+region: plains-of-edit
+capabilities: [file-read, precise-edit]
+brief_file: brief.md
+attempts: 3
+timeout_s: 180
+tool_budget: 10
+score: { base: 100 }
+oracles:
+  - kind: file_normalized
+    path: notes/meeting.md
+    expect: key/meeting.md
+    normalize: [strip-trailing-ws, trim-edges]
+    reveal: minimal
+  - kind: diff_budget
+    max_changed_lines: 6
+    reveal: minimal

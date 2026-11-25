@@ -1,0 +1,15 @@
+id: s010-codemod-migration
+name: "The Long Migration"
+tier: 6
+region: the-summit
+capabilities: [codemod, api-migration, semantics-change, test-rewrite, config-migration]
+brief_file: brief.md
+attempts: 3
+timeout_s: 900
+tool_budget: 70
+score: { base: 100 }
+oracles:
+  - kind: script
+    entry: checker.py
+    reveal: full
+    timeout_s: 420

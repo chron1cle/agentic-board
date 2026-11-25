@@ -1,0 +1,15 @@
+id: s008-pipeline-fix
+name: "Three Tickets Before Friday"
+tier: 4
+region: labyrinth-of-debug
+capabilities: [debugging, concurrency, hidden-tests, reasoning]
+brief_file: brief.md
+attempts: 3
+timeout_s: 600
+tool_budget: 45
+score: { base: 100 }
+oracles:
+  - kind: script
+    entry: checker.py
+    reveal: full
+    timeout_s: 240

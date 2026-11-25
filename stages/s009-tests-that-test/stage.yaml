@@ -1,0 +1,54 @@
+id: s009-tests-that-test
+name: "The Oath of the Testwright"
+tier: 5
+region: spire-of-systems
+capabilities: [test-design, boundary-analysis, mutation-resistant]
+brief_file: brief.md
+attempts: 3
+timeout_s: 600
+tool_budget: 40
+protected: [pricing.py]
+score: { base: 100 }
+oracles:
+  - kind: command
+    name: tests-run-green
+    cmd: python3 -m unittest discover -s tests -t . -q
+    expect_exit: 0
+    reveal: full
+  - kind: mutation
+    target: pricing.py
+    test_command: python3 -m unittest discover -s tests -t . -q
+    min_kill_rate: 0.75
+    reveal: full
+    timeout_s: 120
+    mutants:
+      - name: tier-boundary
+        find: "if subtotal > threshold:"
+        replace: "if subtotal >= threshold:"
+      - name: tier-worst-not-best
+        find: "rate = max(rate, value)"
+        replace: "rate = min(rate, value)"
+      - name: promo-case-sensitive
+        find: "PROMOS.get(promo.upper(), 0.0)"
+        replace: "PROMOS.get(promo, 0.0)"
+      - name: line-total-addition
+        find: "return unit_price * quantity"
+        replace: "return unit_price + quantity"
+      - name: discount-inverted
+        find: "total = subtotal * (1 - rate)"
+        replace: "total = subtotal * rate"
+      - name: tax-multiplied-not-markup
+        find: "total *= (1 + TAX_RATE)"
+        replace: "total *= TAX_RATE"
+      - name: tax-rate-drift
+        find: "TAX_RATE = 0.08"
+        replace: "TAX_RATE = 0.09"
+      - name: rounding-coarser
+        find: "total = round(total, 2)"
+        replace: "total = round(total, 1)"
+      - name: floor-inverted
+        find: "if total < MIN_CHARGE:"
+        replace: "if total > MIN_CHARGE:"
+      - name: floor-removed
+        find: "MIN_CHARGE = 1"
+        replace: "MIN_CHARGE = 0"

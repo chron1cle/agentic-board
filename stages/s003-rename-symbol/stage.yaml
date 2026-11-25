@@ -1,0 +1,22 @@
+id: s003-rename-symbol
+name: "The Renaming of the Account"
+tier: 2
+region: caverns-of-search
+capabilities: [cross-file-reasoning, tests, refactor-discipline]
+brief_file: brief.md
+attempts: 3
+timeout_s: 240
+tool_budget: 20
+score: { base: 100 }
+oracles:
+  - kind: command
+    name: test-suite
+    cmd: python3 -m unittest discover -s tests -t . -q
+    expect_exit: 0
+    reveal: full
+  - kind: script
+    entry: checker.py
+    reveal: full
+  - kind: diff_budget
+    max_changed_lines: 40
+    reveal: minimal

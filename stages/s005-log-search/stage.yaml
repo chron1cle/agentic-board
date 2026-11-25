@@ -1,0 +1,21 @@
+id: s005-log-search
+name: "The Whispering Logs"
+tier: 2
+region: caverns-of-search
+capabilities: [data-extraction, precision, file-output]
+brief_file: brief.md
+attempts: 3
+timeout_s: 300
+tool_budget: 20
+protected: [logs/app.log]
+score: { base: 100 }
+oracles:
+  - kind: json_equal
+    path: report.json
+    expect: key/report.json
+    reveal: minimal
+  - kind: command
+    name: report-is-json
+    cmd: python3 -c "import json;json.load(open('report.json'))"
+    expect_exit: 0
+    reveal: standard

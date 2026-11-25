@@ -1,0 +1,23 @@
+id: s002-json-repair
+name: "The Cracked Manifest"
+tier: 1
+region: plains-of-edit
+capabilities: [file-read, precise-edit, format-repair]
+brief_file: brief.md
+attempts: 3
+timeout_s: 180
+tool_budget: 10
+score: { base: 100 }
+oracles:
+  - kind: command
+    name: parses-as-json
+    cmd: python3 -c "import json;json.load(open('config/app.json'))"
+    expect_exit: 0
+    reveal: standard
+  - kind: json_equal
+    path: config/app.json
+    expect: key/app.json
+    reveal: minimal
+  - kind: diff_budget
+    max_changed_lines: 16
+    reveal: minimal

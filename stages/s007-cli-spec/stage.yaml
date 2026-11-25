@@ -1,0 +1,15 @@
+id: s007-cli-spec
+name: "The Coin Counter's Ledger"
+tier: 3
+region: the-foundry
+capabilities: [build-from-spec, cli-design, numeric-precision, error-handling]
+brief_file: brief.md
+attempts: 3
+timeout_s: 480
+tool_budget: 35
+score: { base: 100 }
+oracles:
+  - kind: script
+    entry: checker.py
+    reveal: full
+    timeout_s: 180

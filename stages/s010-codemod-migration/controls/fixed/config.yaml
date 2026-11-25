@@ -1,0 +1,8 @@
+broker:
+  host: 10.0.0.4
+  port: 5672
+  timeout_ms: 2500
+
+app:
+  name: ledger
+  region: eu-west-1

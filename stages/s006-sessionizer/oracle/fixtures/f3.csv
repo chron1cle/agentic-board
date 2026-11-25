@@ -1,0 +1,4 @@
+session_id,client,requests,first_seen,paths
+s1,10.2.2.10,1,2026-11-25T05:00:00Z,/only
+s2,10.2.2.2,1,2026-11-25T05:00:00Z,/only
+s3,10.2.2.2,1,2026-11-25T06:00:00Z,/late

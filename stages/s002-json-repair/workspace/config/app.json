@@ -1,0 +1,8 @@
+{
+  name: "ledger",
+  'version': "2.1.0",
+  "port": 8080,
+  "features": ["retry", "metrics", "tracing",],
+  /* retry budget, in seconds */
+  "retry_budget": 30,
+}

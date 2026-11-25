@@ -1,0 +1,17 @@
+id: s004-offbyone
+name: "The Off-by-One Catacombs"
+tier: 2
+region: caverns-of-search
+capabilities: [spec-reading, debugging, boundary-reasoning]
+brief_file: brief.md
+attempts: 3
+timeout_s: 240
+tool_budget: 15
+score: { base: 100 }
+oracles:
+  - kind: script
+    entry: checker.py
+    reveal: full
+  - kind: diff_budget
+    max_changed_lines: 30
+    reveal: minimal
