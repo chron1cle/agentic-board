@@ -14,7 +14,9 @@ import unittest
 from pathlib import Path
 
 from engine.feedback import VERDICT_BUDGET, VERDICT_FAIL, VERDICT_INTEGRITY, VERDICT_PASS
+from engine.harness.base import HarnessRequest
 from engine.harness.fake import FakeHarness
+from engine.harness.solve import SolveHarness
 from engine.orchestrator import Orchestrator, RunConfig
 from engine.spec import load_board
 
@@ -237,6 +239,46 @@ class StageClockTest(unittest.TestCase):
         self.assertEqual(probe.timeouts, [], "a stage out of clock must not run")
         self.assertEqual([a.verdict for a in record.stages[0].attempts],
                          [VERDICT_BUDGET])
+
+
+class ReferenceRunTest(unittest.TestCase):
+    """`--harness solve` installs each stage's own fixed control.
+
+    If the reference cannot walk the whole board through the real game loop,
+    then a stage is broken and no agent result on it means anything.
+    """
+
+    def test_the_reference_clears_every_stage_on_the_board(self):
+        tmp = Path(tempfile.mkdtemp(prefix="orch-ref-"))
+        self.addCleanup(shutil.rmtree, tmp, True)
+        config = RunConfig(board=load_board(BOARDS / "v1.yaml"), harness="solve",
+                           out_dir=tmp, run_id="ref")
+        record = Orchestrator(config, SolveHarness()).run()
+
+        self.assertEqual(record.stage_reached, 10,
+                         f"stopped at {record.stopped_at}")
+        self.assertEqual(record.stopped_at, "complete")
+        self.assertEqual(record.first_try_rate, 1.0)
+        self.assertEqual(record.points, 2340.0)
+
+    def test_a_control_replaces_the_workspace_it_does_not_overlay(self):
+        """Passing a stage can mean deleting a file; overlaying would undo that."""
+        tmp = Path(tempfile.mkdtemp(prefix="orch-ref-"))
+        self.addCleanup(shutil.rmtree, tmp, True)
+        stages = tmp / "stages" / "sx" / "controls" / "fixed"
+        stages.mkdir(parents=True)
+        (stages / "keep.txt").write_text("kept")
+        workspace = tmp / "ws"
+        workspace.mkdir()
+        (workspace / "gone.txt").write_text("must not survive")
+        (workspace / "keep.txt").write_text("stale")
+
+        harness = SolveHarness(stages_dir=tmp / "stages")
+        request = HarnessRequest(prompt="x", workspace=workspace, timeout_s=5,
+                                 stage_id="sx", attempt=1)
+        harness.run(request)
+        self.assertFalse((workspace / "gone.txt").exists())
+        self.assertEqual((workspace / "keep.txt").read_text(), "kept")
 
 
 if __name__ == "__main__":

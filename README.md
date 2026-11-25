@@ -85,6 +85,20 @@ exercise the whole pipeline — sandbox provisioning, oracles, scoring, run reco
 python3 -m engine run --harness fake --run-id smoke
 ```
 
+### The reference run (proves the board is solvable)
+
+`--harness solve` is not an agent. It plays each stage by installing that stage's own
+`fixed` control, and it exists to answer a question you must be able to answer before
+you blame a model: *is this board completable at all?*
+
+```bash
+python3 -m engine run --harness solve --run-id reference
+# stage reached 10 / 10, points 2340.0, first-try rate 100%
+```
+
+If that ever stops reaching stage 10, a stage is broken. CI runs it for exactly that
+reason. It is also the cheapest way to get a full board to look at in the viewer.
+
 ### With a real harness
 
 `opencode` is wired up. Put your provider credentials wherever opencode normally

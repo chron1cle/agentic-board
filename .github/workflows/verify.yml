@@ -1,0 +1,62 @@
+name: verify
+
+# The instrument's own gate: if the board does not validate, the controls do not
+# behave, or a unit test fails, nothing else here is worth reading.
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  engine:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ["3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Stage and board definitions
+        run: python3 -m engine validate
+
+      - name: Controls behave (fixed passes, empty fails)
+        run: python3 -m engine controls
+
+      - name: Unit tests
+        run: python3 -m unittest discover -s tests -t . -v
+
+      - name: The reference solution clears the whole board
+        run: |
+          python3 -m engine run --harness solve --run-id ci --out runs --quiet
+          python3 - <<'PY'
+          import json
+          final = json.load(open("runs/ci/run.json"))["final"]
+          assert final["stageReached"] == final["boardSize"], final
+          assert final["stoppedAt"] == "complete", final
+          print("board completable:", final)
+          PY
+          test -s runs/ci/events.jsonl
+          test -s runs/index.json
+
+  viewer:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: board
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: board/package-lock.json
+      - run: npm ci
+      - run: npm run build

@@ -5,10 +5,12 @@ from __future__ import annotations
 from .base import HarnessAdapter, HarnessRequest, HarnessResult
 from .fake import FakeHarness
 from .opencode import OpenCodeAdapter, resolve_default_model
+from .solve import SolveHarness
 
 REGISTRY: dict[str, type[HarnessAdapter]] = {
     "opencode": OpenCodeAdapter,
     "fake": FakeHarness,
+    "solve": SolveHarness,
 }
 
 
@@ -23,5 +25,5 @@ def create(name: str, model: str | None = None, **kwargs) -> HarnessAdapter:
 
 
 __all__ = ["REGISTRY", "HarnessAdapter", "HarnessRequest", "HarnessResult",
-           "FakeHarness", "OpenCodeAdapter", "available_harnesses", "create",
-           "resolve_default_model"]
+           "FakeHarness", "OpenCodeAdapter", "SolveHarness",
+           "available_harnesses", "create", "resolve_default_model"]
