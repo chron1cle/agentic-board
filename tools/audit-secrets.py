@@ -392,8 +392,13 @@ def scan_content(path: Path, text: str, source: str) -> list[Finding]:
         for token in ENTROPY_OK.findall(line):
             if len(token) < MIN_ENTROPY_TOKEN or token.isdigit():
                 continue
-            if len(token) == 40 and re.fullmatch(r"[0-9a-f]{40}", token):
-                continue  # git object id
+            if re.fullmatch(r"[0-9a-fA-F]{40}|[0-9a-fA-F]{64}", token):
+                continue  # git object id, or a content hash
+            if not re.search(r"\d", token):
+                # Real tokens mix letters and digits. A long all-letters run is
+                # an identifier or a prose word, and flagging those teaches
+                # people to ignore the tool.
+                continue
             if shannon(token) < ENTROPY_THRESHOLD:
                 continue
             findings.append(Finding(display, lineno, "high-entropy",
