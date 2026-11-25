@@ -1,0 +1,9 @@
+# The engine's only runtime dependency. Everything else is the standard
+# library, on purpose: this is a measurement instrument, and every dependency
+# is a way for a run to change underneath you.
+#
+#   pip install -r requirements.txt
+#
+# The unit tests (python3 -m unittest discover -s tests -t .) need nothing else
+# — no pytest, no network.
+pyyaml>=6.0,<7

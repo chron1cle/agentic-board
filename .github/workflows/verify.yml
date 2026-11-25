@@ -24,6 +24,9 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
+      - name: Install the one dependency
+        run: python3 -m pip install --disable-pip-version-check -r requirements.txt
+
       - name: Stage and board definitions
         run: python3 -m engine validate
 

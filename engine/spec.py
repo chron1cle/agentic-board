@@ -11,7 +11,15 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 
-import yaml
+try:
+    import yaml
+except ModuleNotFoundError as exc:  # pragma: no cover
+    # The engine's only third-party dependency. Fail with an instruction rather
+    # than a traceback, because the person hitting this has just cloned the repo.
+    raise ModuleNotFoundError(
+        "PyYAML is required to read stage and board definitions. "
+        "Install the pinned dependencies: pip install -r requirements.txt"
+    ) from exc
 
 # Oracle kinds the engine knows how to execute. Adding one means adding a
 # class in oracles.py and listing it here.

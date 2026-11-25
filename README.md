@@ -5,8 +5,9 @@ task with a machine-checkable outcome. An agent plays the board; how far it gets
 the result.
 
 Everything here runs on one machine, offline, with no servers and no external
-services. The engine is stdlib Python. The tests are `unittest`. The only network
-traffic in a benchmark is whatever the harness itself needs to reach its model.
+services. The engine is Python with exactly one dependency, PyYAML; a test fails if a
+second one appears. The tests are `unittest`. The only network traffic in a benchmark
+is whatever the harness itself needs to reach its model.
 
 ## The idea in one paragraph
 
@@ -62,17 +63,20 @@ python3 -m engine controls
 
 ## Quickstart
 
-Requirements: Python 3.12+ (stdlib only), and Node 20+ only if you want the 3D viewer.
+Requirements: Python 3.12+ and one package, PyYAML. Node 20+ only if you want the 3D
+viewer.
 
 ```bash
-tools/install-hooks.sh                 # once per clone: the secret audit pre-commit hook
-python3 -m engine validate             # every stage + the board parse and are consistent
-python3 -m engine controls             # every oracle rejects nothing and accepts everything
-python3 -m unittest discover -s tests -t .   # the engine's own test suite
+pip install -r requirements.txt            # pyyaml, and that is the whole list
+tools/install-hooks.sh                     # once per clone: the secret audit hook
+python3 -m engine validate                 # every stage + the board parse and agree
+python3 -m engine controls                 # fixed control passes, do-nothing fails
+python3 -m unittest discover -s tests -t . # the engine's own test suite
 ```
 
-Those four commands need no credentials and no network. If they are green, the
-instrument is sound.
+After that one install, nothing here needs credentials or a network: the tests are
+stdlib `unittest`, the fixtures are in-repo, and no oracle reaches outside the
+sandbox. If those four are green, the instrument is sound.
 
 ## Running a benchmark
 
