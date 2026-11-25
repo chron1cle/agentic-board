@@ -279,7 +279,7 @@ export default function Scene({
           <Attempts results={frame.attempts} active={frame.attempting} reducedMotion={reducedMotion} />
           <Html center position={[0, 2.32, 0]} className="node-label" style={{ pointerEvents: 'none' }}>
             <div className={`label ${frame.resolved ? (current.cleared ? 'cleared' : 'failed') : 'running'}`}>
-              <b>{frame.resolved ? (current.cleared ? `+${current.points} points` : 'Run stopped') : (activity.checking ? 'Checking attempt' : 'Attempts in progress')}</b>
+              <b>{frame.resolved ? (current.cleared ? `+${current.points} raw points` : 'Run stopped') : (activity.checking ? 'Checking attempt' : 'Attempts in progress')}</b>
             </div>
           </Html>
         </group>

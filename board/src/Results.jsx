@@ -19,7 +19,7 @@ const COLUMNS = [
   { key: 'harness', label: 'Harness', get: (r) => r.harness },
   { key: 'model', label: 'Model', get: (r) => r.model },
   { key: 'stageReached', label: 'Cleared', get: (r) => `${r.stageReached}/${r.selectedStages || r.boardSize}`, num: (r) => r.stageReached },
-  { key: 'points', label: 'Points', get: (r) => r.points, num: (r) => r.points },
+  { key: 'points', label: 'Raw points', get: (r) => r.points, num: (r) => r.points },
   { key: 'firstTryRate', label: 'First-try', get: (r) => `${Math.round(r.firstTryRate * 100)}%`, num: (r) => r.firstTryRate },
   { key: 'feedbackUptake', label: 'Uptake', get: (r) => r.feedbackTrials ? `${Math.round(r.feedbackUptake * 100)}% (${r.feedbackTrials})` : '—', num: (r) => r.feedbackTrials ? r.feedbackUptake : -1 },
   { key: 'stoppedAt', label: 'Stopped at', get: (r) => r.stoppedAt },

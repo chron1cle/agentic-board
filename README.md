@@ -342,3 +342,7 @@ settled; reopening one needs a reason, not a preference.
 
 Before committing, `python3 tools/audit-secrets.py`. This repo is public and every
 commit is permanent.
+
+## License
+
+[MIT](LICENSE).

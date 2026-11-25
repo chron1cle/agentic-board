@@ -251,7 +251,7 @@ export default function App() {
             <aside className="hud" ref={hud}>
               <div className="score">
                 <span className="points">{score.toFixed(1)}</span>
-                <span className="of">of {run.final.points}</span>
+                <span className="of">of {run.final.points} raw pts</span>
               </div>
               {current ? (
                 <div className="now">
@@ -309,7 +309,7 @@ export default function App() {
                     >
                       <i style={{ background: regionOf(row.region).color }} />
                       <span>{levelLabel(row, worldScores)} · {row.name || row.stage}</span>
-                      <b>{resolved >= i && row.cleared ? `+${row.points}` : '—'}</b>
+                      <b>{resolved >= i && row.cleared ? `+${row.points} raw` : '—'}</b>
                     </button>
                   </li>
                 ))}

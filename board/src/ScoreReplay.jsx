@@ -28,7 +28,7 @@ export default function ScoreReplay({ timeline, progress, worlds }) {
   return (
     <div className="replay">
       <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet"
-        role="img" aria-label="Cumulative score by benchmark stage">
+        role="img" aria-label="Cumulative raw points by benchmark level">
         <defs>
           <clipPath id={clipId}>
             <rect x={pad.l - 2} y={0} width={Math.max(0, head - pad.l + 3)} height={H} />
@@ -78,8 +78,8 @@ export default function ScoreReplay({ timeline, progress, worlds }) {
         <circle cx={head} cy={y(scoreAt(timeline, progress))} r={5} className="head-dot" />
       </svg>
       <p className="hint">
-        Each bar is a stage, coloured by its region. The line is the running total; the playhead
-        is where the replay currently is.
+        The bars and line show cumulative raw points. World scores on the 0–100 scale
+        appear in Results and at the end of the replay.
       </p>
     </div>
   )
