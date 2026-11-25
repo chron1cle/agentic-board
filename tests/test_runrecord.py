@@ -99,7 +99,8 @@ class SerializationTest(unittest.TestCase):
         self.assertEqual(
             sorted(final),
             sorted(["stageReached", "stoppedAt", "points", "firstTryRate",
-                    "feedbackUptake", "boardSize", "tool_calls", "seconds",
+                    "feedbackUptake", "feedbackTrials", "boardSize", "selectedStages",
+                    "tool_calls", "seconds",
                     "tokens", "attempts"]))
 
     def test_attempts_survive_serialization(self):

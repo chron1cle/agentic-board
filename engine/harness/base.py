@@ -33,6 +33,8 @@ class HarnessResult:
     error: str = ""
     raw: str = ""
     timed_out: bool = False
+    tools_reported: bool = True
+    tokens_reported: bool = True
 
     @property
     def ok(self) -> bool:

@@ -11,17 +11,17 @@ from __future__ import annotations
 import json
 import shutil
 import time
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from pathlib import Path
 
 from . import oracles as oracle_mod
-from .feedback import (AttemptRecord, VERDICT_BUDGET, VERDICT_FAIL,
+from .feedback import (AttemptRecord, VERDICT_BUDGET, VERDICT_ERROR, VERDICT_FAIL,
                        VERDICT_INTEGRITY, VERDICT_PASS, build_prompt)
 from .harness.base import HarnessAdapter, HarnessRequest
 from .runrecord import RunRecord, StageResult
 from .sandbox import Sandbox
 from .scoring import score_stage
-from .spec import Board, Stage
+from .spec import Board, SpecError, Stage
 
 
 @dataclass
@@ -41,9 +41,13 @@ class RunConfig:
         if self.only:
             picked = [s for s in stages if s.id == self.only or s.id.endswith(self.only)]
             if not picked:
-                raise ValueError(f"no stage matches {self.only!r}")
+                raise SpecError(f"no stage matches {self.only!r}")
+            if len(picked) != 1:
+                raise SpecError(f"multiple stages match {self.only!r}")
             stages = picked
-        if self.limit:
+        if self.limit is not None:
+            if self.limit < 1:
+                raise SpecError("--limit must be positive")
             stages = stages[: self.limit]
         return stages
 
@@ -51,15 +55,22 @@ class RunConfig:
 class Orchestrator:
     def __init__(self, config: RunConfig, adapter: HarnessAdapter,
                  on_event=None):
+        self.stages = config.stages()
         self.config = config
         self.adapter = adapter
         self.on_event = on_event or (lambda event: None)
-        self.run_id = config.run_id or time.strftime("%Y%m%d-%H%M%S")
+        stamp = time.strftime("%Y%m%d-%H%M%S")
+        self.run_id = config.run_id or f"{stamp}-{time.time_ns() % 10**9:09d}"
+        if Path(self.run_id).name != self.run_id or self.run_id in {"", ".", ".."}:
+            raise SpecError("run ID must be a single directory name")
         # Absolute, always. Oracles run with cwd set to the sandbox workspace, so
         # a relative --out would resolve against the wrong directory and every
         # script oracle would report "checker produced no verdict".
         self.run_dir = (Path(config.out_dir) / self.run_id).resolve()
-        self.run_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            self.run_dir.mkdir(parents=True)
+        except FileExistsError as exc:
+            raise SpecError(f"run ID {self.run_id!r} already exists") from exc
         self._oracle_root = self.run_dir / "_oracle"
         self._oracle_root.mkdir(exist_ok=True)
         self._events_path = self.run_dir / "events.jsonl"
@@ -73,7 +84,7 @@ class Orchestrator:
 
     # -- oracles -----------------------------------------------------------
     def _stage_oracle_dir(self, stage: Stage) -> Path:
-        """Stage checkers live outside the attempt tree, copied once per stage."""
+        """Restore a clean checker copy before each attempt."""
         target = self._oracle_root / stage.id
         if target.exists():
             shutil.rmtree(target)
@@ -98,7 +109,6 @@ class Orchestrator:
     def play_stage(self, stage: Stage, index: int) -> StageResult:
         result = StageResult(id=stage.id, name=stage.name, tier=stage.tier,
                              region=stage.region)
-        oracle_dir = self._stage_oracle_dir(stage)
         self.emit("stage.entered", index=index, stage=stage.id, tier=stage.tier,
                   name=stage.name)
 
@@ -110,14 +120,15 @@ class Orchestrator:
         for number in range(1, stage.attempts + 1):
             attempt_dir = self.run_dir / stage.id / f"attempt{number}"
             box = Sandbox.provision(stage, attempt_dir)
-            box.oracle_dir = oracle_dir
+            box.oracle_dir = self._stage_oracle_dir(stage)
+            box.oracle_seed = self.config.seed if stage.seedable else None
             fingerprint = box.fingerprint()
             if not result.fingerprint:
                 result.fingerprint = fingerprint
             elif fingerprint != result.fingerprint:
-                # Provisioning must be byte-identical or the attempts are not
-                # independent trials and the statistics are meaningless.
+                # Every attempt at a stage must start from the same fixture.
                 self.emit("stage.void", stage=stage.id, reason="provisioning drift")
+                result.status = VERDICT_ERROR
                 result.attempts = attempts
                 return result
 
@@ -127,7 +138,7 @@ class Orchestrator:
                           verdict=VERDICT_BUDGET, tools=0, seconds=0, tokens=0,
                           failed=["stage-clock"])
                 attempts.append(AttemptRecord(
-                    n=number, verdict=VERDICT_BUDGET,
+                    n=number, verdict=VERDICT_BUDGET, started=False,
                     checks=[oracle_mod.Check("stage-clock", False,
                                              f"stage budget of {stage.timeout_s}s "
                                              "exhausted before this attempt",
@@ -136,9 +147,8 @@ class Orchestrator:
                 break
 
             prompt = build_prompt(stage.brief, attempts, stage.attempts - number,
-                                  stage.tool_budget, left)
+                                  stage.tool_budget, int(left))
             self.emit("attempt.started", stage=stage.id, attempt=number)
-            started = time.monotonic()
             harness_result = self.adapter.run(HarnessRequest(
                 prompt=prompt, workspace=box.workspace, timeout_s=int(left),
                 stage_id=stage.id, attempt=number, model=self.config.model))
@@ -155,16 +165,23 @@ class Orchestrator:
                 checks = [oracle_mod.Check("timeout", False,
                                            f"stage budget of {stage.timeout_s}s exhausted",
                                            reveal="full")]
+            elif not harness_result.ok:
+                verdict = VERDICT_ERROR
+                checks = [oracle_mod.Check("harness-error", False, "harness reported an error")]
             else:
                 checks = self._verify(stage, box)
-                verdict = VERDICT_PASS if all(c.ok for c in checks) else VERDICT_FAIL
+                if not checks or any(c.name.endswith((":error", ":timeout")) for c in checks):
+                    verdict = VERDICT_ERROR
+                else:
+                    verdict = VERDICT_PASS if all(c.ok for c in checks) else VERDICT_FAIL
 
             record = AttemptRecord(
                 n=number, verdict=verdict, checks=checks,
                 tool_calls=harness_result.tool_calls,
-                seconds=round(time.monotonic() - started, 2),
+                seconds=round(harness_result.seconds, 2),
                 tokens=harness_result.tokens,
-                note=harness_result.error[:200])
+                tools_reported=harness_result.tools_reported,
+                tokens_reported=harness_result.tokens_reported)
             attempts.append(record)
             result.attempts_used = number
             result.tool_calls += harness_result.tool_calls
@@ -178,12 +195,16 @@ class Orchestrator:
                       seconds=record.seconds, tokens=harness_result.tokens,
                       failed=[c.name for c in checks if not c.ok])
 
+            if verdict in (VERDICT_INTEGRITY, VERDICT_ERROR):
+                result.status = verdict
+                break
+
             if verdict == VERDICT_PASS:
                 result.cleared = True
                 result.points = score_stage(
                     stage.tier, number, tools_used=result.tool_calls,
                     tool_budget=stage.tool_budget * number,
-                    seconds=result.seconds)
+                    seconds=result.seconds, base=stage.score_base)
                 self.emit("stage.cleared", stage=stage.id, attempt=number,
                           points=result.points)
                 break
@@ -210,18 +231,28 @@ class Orchestrator:
 
     # -- the run -----------------------------------------------------------
     def run(self) -> RunRecord:
-        stages = self.config.stages()
+        stages = self.stages
+        status = "benchmark"
+        if self.config.harness in {"fake", "solve"}:
+            status = "control"
+        elif self.config.only or len(stages) != self.config.board.size:
+            status = "partial"
         record = RunRecord(
             run=self.run_id, harness=self.config.harness,
-            model=getattr(self.adapter, "label", lambda: self.config.model)(),
+            model=self.config.model or getattr(self.adapter, "label", lambda: None)(),
             board=self.config.board.id, board_version=self.config.board.version,
-            seed=self.config.seed)
+            seed=self.config.seed, board_size=self.config.board.size,
+            selected_stages=len(stages), status=status)
         self.emit("run.started", harness=record.harness, model=record.model,
                   board=record.board, stages=len(stages))
 
         for index, stage in enumerate(stages, start=1):
             stage_result = self.play_stage(stage, index)
             record.stages.append(stage_result)
+            if stage_result.status:
+                record.status = stage_result.status
+            elif record.status == "benchmark" and any(not attempt.tools_reported for attempt in stage_result.attempts):
+                record.status = "telemetry_incomplete"
             if not stage_result.cleared:
                 # Three failures ends the run. The highest stage cleared is
                 # the level achieved; there is no playing past a locked door.
@@ -231,6 +262,9 @@ class Orchestrator:
                         f"{len(stages) - index} stage(s) not played")
                 break
 
+        if any(not attempt.tools_reported or not attempt.tokens_reported
+               for stage in record.stages for attempt in stage.attempts):
+            record.notes.append("One or more attempts omitted tool or token accounting.")
         record.finished = time.time()
         self.emit("run.ended", stageReached=record.stage_reached,
                   points=record.points, stoppedAt=record.stopped_at)

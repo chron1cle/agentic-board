@@ -17,6 +17,7 @@ VERDICT_PASS = "pass"
 VERDICT_FAIL = "fail"
 VERDICT_BUDGET = "budget_exhausted"
 VERDICT_INTEGRITY = "integrity_violation"
+VERDICT_ERROR = "infrastructure_error"
 
 
 @dataclass
@@ -28,14 +29,20 @@ class AttemptRecord:
     seconds: float = 0.0
     tokens: int = 0
     note: str = ""
+    started: bool = True
+    tools_reported: bool = True
+    tokens_reported: bool = True
 
     def as_dict(self) -> dict:
         return {
             "n": self.n,
+            "started": self.started,
             "verdict": self.verdict,
             "tools": self.tool_calls,
+            "tools_reported": self.tools_reported,
             "s": round(self.seconds, 2),
             "tokens": self.tokens,
+            "tokens_reported": self.tokens_reported,
             "note": self.note,
             "checks": [c.as_dict() for c in self.checks],
         }

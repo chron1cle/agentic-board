@@ -191,6 +191,16 @@ class ScriptParsingTest(unittest.TestCase):
         checks = parse_script_output(result, "full", "checker.py")
         self.assertFalse(checks[0].ok)
 
+    def test_a_checker_that_crashes_after_printing_a_pass_cannot_clear(self):
+        result = CommandResult("x", 1, '{"check":"a","pass":true}', "", 1.0)
+        checks = parse_script_output(result, "full", "checker.py")
+        self.assertFalse(checks[-1].ok)
+        self.assertEqual(checks[-1].name, "checker.py:error")
+
+    def test_a_string_is_not_a_boolean_verdict(self):
+        result = CommandResult("x", 0, '{"check":"a","pass":"false"}', "", 1.0)
+        self.assertFalse(parse_script_output(result, "full", "checker.py")[0].ok)
+
     def test_timeout_is_reported(self):
         result = CommandResult("x", 124, "", "", 1.0, timed_out=True)
         checks = parse_script_output(result, "full", "checker.py")

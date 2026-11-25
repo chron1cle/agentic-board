@@ -1,8 +1,7 @@
 """Sandbox provisioning and execution.
 
-An attempt always starts from a pristine workspace. That is what makes attempts
-independent trials rather than one debugging session split into three, and the
-independence is what the statistics in DESIGN.md depend on.
+Each attempt starts from a pristine workspace. Retries retain the feedback ledger
+and the remaining stage budget.
 
 LocalSandbox runs on the host with directory isolation and a pinned
 environment. It is the default so the whole benchmark runs offline with no
@@ -26,7 +25,7 @@ import shutil
 import subprocess
 import time
 from dataclasses import dataclass, field
-from difflib import unified_diff
+from difflib import SequenceMatcher, unified_diff
 from pathlib import Path
 
 # Pinned so "exact output" means the same thing on every machine. See DESIGN.md §3.
@@ -39,8 +38,8 @@ PINNED_ENV = {
     "PYTHONUTF8": "1",
 }
 
-# Never let the operator's credentials reach the agent's environment, even by
-# inheritance. Anything that looks like a secret is dropped.
+# Filter credential-like variables from commands launched through Sandbox.run.
+# Harness adapters manage their provider environment separately.
 SECRET_ENV_HINTS = ("KEY", "TOKEN", "SECRET", "PASSWORD", "CREDENTIAL", "AUTH")
 
 BINARY_SNIFF = 4096
@@ -99,7 +98,7 @@ def snapshot_hashes(root: Path, paths: list[str]) -> dict[str, str]:
         target = root / rel
         if target.is_dir():
             for rel_file in _iter_files(target):
-                hashes[rel_file] = _hash_file(root / rel_file)
+                hashes[str(Path(rel) / rel_file)] = _hash_file(target / rel_file)
         elif target.exists():
             hashes[rel] = _hash_file(target)
         else:
@@ -128,6 +127,7 @@ class Sandbox:
         self.oracle_dir: Path = self.root / "_stage_oracle"
         self._baseline: dict[str, str] = {}
         self.history: list[CommandResult] = []
+        self.oracle_seed: int | None = None
 
     # -- lifecycle ---------------------------------------------------------
     @classmethod
@@ -182,10 +182,9 @@ class Sandbox:
     # -- integrity ---------------------------------------------------------
     def integrity_violations(self) -> list[str]:
         """Protected paths the agent modified or deleted. Disqualifies the run."""
-        if not self._baseline:
-            return []
         now = snapshot_hashes(self.workspace, self.protected)
-        return sorted(p for p, digest in self._baseline.items() if now.get(p) != digest)
+        return sorted(p for p in self._baseline.keys() | now.keys()
+                      if now.get(p) != self._baseline.get(p))
 
     # -- diffing -----------------------------------------------------------
     def delta(self) -> FileDelta:
@@ -194,17 +193,20 @@ class Sandbox:
         after = set(_iter_files(self.workspace))
         delta.added = sorted(after - before)
         delta.removed = sorted(before - after)
+        for rel in delta.added:
+            text = _read(self.workspace / rel)
+            delta.changed_lines += max(1, len(text.splitlines())) if text is not None else 1
+        for rel in delta.removed:
+            text = _read(self.original / rel)
+            delta.changed_lines += max(1, len(text.splitlines())) if text is not None else 1
         for rel in sorted(before & after):
+            if _hash_file(self.original / rel) == _hash_file(self.workspace / rel):
+                continue
+            delta.modified.append(rel)
             old = _read(self.original / rel)
             new = _read(self.workspace / rel)
-            if old is None or new is None:
-                if old != new:
-                    delta.modified.append(rel)
-                continue
-            if old != new:
-                delta.modified.append(rel)
-                delta.changed_lines += _changed_lines(old, new)
-        delta.added = [p for p in delta.added if not p.startswith("_original")]
+            delta.changed_lines += max(1, _changed_lines(old, new)) if (
+                old is not None and new is not None) else 1
         return delta
 
     def unified_diff(self, limit: int = 4000) -> str:
@@ -248,10 +250,7 @@ def normalize_text(text: str, ops: list[str]) -> str:
 
 
 def _changed_lines(old: str, new: str) -> int:
-    count = 0
-    for line in unified_diff(old.splitlines(), new.splitlines(), lineterm=""):
-        if line.startswith("+") and not line.startswith("+++"):
-            count += 1
-        elif line.startswith("-") and not line.startswith("---"):
-            count += 1
-    return count
+    matcher = SequenceMatcher(None, old.splitlines(), new.splitlines(), autojunk=False)
+    return sum(old_end - old_start + new_end - new_start
+               for tag, old_start, old_end, new_start, new_end in matcher.get_opcodes()
+               if tag != "equal")

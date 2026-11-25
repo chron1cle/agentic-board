@@ -1,9 +1,3 @@
-// Data access for the viewer.
-//
-// The viewer reads run.json and runs/index.json and nothing else. That is on
-// purpose: the same file is the score sheet, the replay tape, and the board
-// state, so the renderer can never disagree with the scoreboard.
-
 const INDEX_CANDIDATES = ['/runs/index.json', '../../runs/index.json']
 
 let indexBase = null
@@ -34,4 +28,8 @@ export async function loadIndex() {
 export async function loadRun(entry) {
   const path = entry.path || `${entry.run}/run.json`
   return getJson(indexBase + path)
+}
+
+export function loadCatalog() {
+  return getJson('/catalog.json')
 }

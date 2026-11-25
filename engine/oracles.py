@@ -239,7 +239,8 @@ class Script(Oracle):
         # space must not become two arguments.
         oracle_dir = Path(box.oracle_dir).resolve()
         res = box.run(
-            f"{self.config.get('interpreter', 'python3')} {shlex.quote(str(oracle_dir / entry))}",
+            (f"BOARD_SEED={box.oracle_seed} " if box.oracle_seed is not None else "")
+            + f"{self.config.get('interpreter', 'python3')} {shlex.quote(str(oracle_dir / entry))}",
             cwd=box.workspace,
             timeout=int(self.config.get("timeout_s", 180)),
         )
@@ -340,12 +341,12 @@ def parse_script_output(res, reveal: str, entry: str, full_evidence: bool = Fals
         except json.JSONDecodeError:
             noise.append(line)
             continue
-        if "check" not in payload:
+        if not isinstance(payload.get("check"), str) or type(payload.get("pass")) is not bool:
             noise.append(line)
             continue
         checks.append(Check(
             name=sanitize(str(payload["check"]), 120),
-            ok=bool(payload.get("pass")),
+            ok=payload["pass"],
             detail=sanitize(payload.get("detail", "")),
             evidence=sanitize(payload.get("evidence", ""), MAX_EVIDENCE),
             reveal=reveal,
@@ -354,6 +355,10 @@ def parse_script_output(res, reveal: str, entry: str, full_evidence: bool = Fals
     if res.timed_out:
         checks.append(Check(f"{entry}:timeout", False,
                             "checker timed out", reveal=reveal))
+    if checks and res.exit_code != 0 and not res.timed_out and all(c.ok for c in checks):
+        checks.append(Check(f"{entry}:error", False,
+                            f"checker exited {res.exit_code} without a failing check",
+                            reveal=reveal))
     if not checks:
         checks.append(Check(f"{entry}:error", False,
                             "checker produced no verdict",
@@ -382,12 +387,12 @@ def _byte_evidence(got: bytes, want: bytes) -> str:
 
 def _json_diff_paths(got, want, path: str = "$") -> list[str]:
     """Field paths that disagree. Names only — values stay withheld at minimal."""
-    if type(got) is not type(want) and not (isinstance(got, (int, float))
-                                            and isinstance(want, (int, float))):
+    if type(got) is not type(want) and not (type(got) in (int, float)
+                                            and type(want) in (int, float)):
         return [path]
     if isinstance(want, dict):
         out = []
-        for key in set(list(want) + list(got)):
+        for key in sorted(want.keys() | got.keys()):
             if key not in want:
                 out.append(f"{path}.{key} (unexpected)")
             elif key not in got:

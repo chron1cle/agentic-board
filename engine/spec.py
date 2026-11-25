@@ -30,6 +30,7 @@ ORACLE_KINDS = {
     "diff_budget",
     "command",
     "script",
+    "differential",
     "mutation",
     "timing",
 }
@@ -152,6 +153,10 @@ def load_stage(path: Path) -> Stage:
         setup=raw.get("setup"),
     )
 
+    if not 1 <= stage.attempts <= DEFAULT_ATTEMPTS:
+        raise SpecError(f"{where}: attempts must be 1..{DEFAULT_ATTEMPTS}")
+    if min(stage.tool_budget, stage.timeout_s, stage.score_base) <= 0:
+        raise SpecError(f"{where}: tool budget, timeout and base score must be positive")
     if not stage.workspace.is_dir():
         raise SpecError(f"{where}: workspace/ directory is required")
     for spec in stage.oracles:

@@ -50,8 +50,9 @@ class OpenCodeAdapter(HarnessAdapter):
         binary = self.bin_path or "opencode"
         cmd = [binary, "run", "--format", "json", "--auto", "--archived",
                "--title", f"agentic-board {request.stage_id} a{request.attempt}"]
-        if self.model:
-            cmd += ["--model", self.model]
+        model = request.model or self.model
+        if model:
+            cmd += ["--model", model]
         cmd.append(request.prompt)
 
         started = time.monotonic()
@@ -60,10 +61,14 @@ class OpenCodeAdapter(HarnessAdapter):
                 cmd, cwd=str(request.workspace), capture_output=True,
                 text=True, errors="replace", timeout=request.timeout_s,
             )
-        except subprocess.TimeoutExpired:
-            return HarnessResult(exit_code=124, timed_out=True,
-                                 seconds=round(time.monotonic() - started, 2),
-                                 error="harness timed out")
+        except subprocess.TimeoutExpired as exc:
+            raw = exc.stdout or ""
+            if isinstance(raw, bytes):
+                raw = raw.decode("utf-8", errors="replace")
+            result = parse_opencode_stream(raw, 124, round(time.monotonic() - started, 2))
+            result.timed_out = True
+            result.error = "harness timed out"
+            return result
         except (OSError, FileNotFoundError) as exc:
             return HarnessResult(exit_code=127, error=f"could not start harness: {exc}",
                                  seconds=round(time.monotonic() - started, 2))
@@ -115,6 +120,8 @@ def parse_opencode_stream(raw: str, exit_code: int, seconds: float,
             result.tokens += int(tokens.get("input", 0)) + int(tokens.get("output", 0)) \
                 + int(tokens.get("reasoning", 0))
             result.events.append({"type": "step.finish", "reason": part.get("reason", "")})
+        elif kind == "error":
+            result.error = "OpenCode reported a session error"
         elif kind == "text":
             text_parts.append(part.get("text", ""))
             result.events.append({"type": "message"})

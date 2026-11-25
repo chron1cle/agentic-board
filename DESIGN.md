@@ -4,7 +4,7 @@ A benchmark for coding agents, presented as a 3D board game. Each board node is 
 coding task with a machine-checkable outcome. An agent plays the board; how far it
 gets is the result.
 
-Status: **built and running.** The engine, the ten-stage board `v1`, the unit tests,
+Status: **built and running.** The engine, the twenty-stage board `v2`, the unit tests,
 the 3D board and the results viewer exist and pass their own checks. This file is the
 record of what was decided and why; it is not aspirational — decisions marked
 **DECIDED** are settled.
@@ -13,12 +13,14 @@ Two places where the build is deliberately weaker than the design, both recorded
 so nobody has to rediscover them:
 
 - **Execution is a local sandbox, not the privileged container of §7.** Attempts run
-  as the operator's own uid with no network and a stripped environment. That buys
-  byte-identical workspaces (fingerprint-checked per attempt) and accident proofing;
-  it does not buy isolation from a determined agent. The container path in §7 is still
+  as the operator's own uid. The local engine pins selected variables for
+  checker commands. OpenCode inherits the operator's environment and can use
+  the network. Workspace fingerprints and protected-path checks detect some
+  accidental changes. Isolation relies on the planned container backend. The container path in §7 is still
   the plan and `engine/sandbox.py` is written so it is the only file that changes.
-- **Only the `opencode` harness has an adapter.** §10 lists the others as the next
-  work, and `engine/harness/__init__.py` is the registry they plug into.
+- **Most adapters use headless CLI output.** T3 Code uses a local server client
+  with separate thread lifecycle handling. The command adapter exposes the same
+  one-attempt workspace contract to other agents.
 
 ---
 
@@ -59,8 +61,9 @@ ledger (§4).
 
 This was an explicit reversal. We first considered a persistent workspace with full
 feedback, and rejected it: it makes attempt 2 a continuation of attempt 1, which
-means attempts are not independent trials, which destroys the statistics that make a
-leaderboard defensible. Stateless attempts also collapse the harness adapter to a
+confounds retry results with retained edits. Fresh workspaces control that variable.
+The ledger and the shared stage clock still condition later attempts on earlier ones.
+Stateless attempts also reduce the harness adapter to a
 single `run()` call with no session-resume requirement, which widens the set of
 harnesses we can support to essentially every headless one-shot CLI.
 
@@ -204,9 +207,10 @@ speed bonus         +5% under the reference-agent median wall time
 failed stage        0, run ends
 ```
 
-Global caps: per-stage wall clock across all attempts, whole-run wall clock, whole-run
-token ceiling. All recorded. Without these the leaderboard measures whoever was
-allowed to run longest.
+The local runner implements a shared stage clock across attempts. Tool budgets are
+point penalties, and runtime and token totals are harness-reported diagnostics.
+The whole-run wall-clock cap, token ceiling, and reference medians for speed bonuses
+remain planned.
 
 ### Headline metrics
 
@@ -216,12 +220,16 @@ allowed to run longest.
 | **First-Try Rate** | share of cleared stages cleared on attempt 1 |
 | **Feedback Uptake** | P(pass on attempt k+1 \| failed attempt k) |
 
-Feedback Uptake is the most interesting number in the system: it isolates whether an
-agent can *use an error signal*, separate from whether it can solve a problem cold.
-Two agents with identical Stage Reached can differ sharply here.
+Feedback Uptake is the observed retry conversion rate after an oracle rejection.
+Report its denominator. A retry inherits the feedback ledger and the remaining stage
+clock, and the underlying mix of stages depends on what the agent has cleared.
+Estimating the effect of feedback requires otherwise equivalent runs with and
+without the ledger.
 
-Because attempts are independent trials we can also report honest `pass@1`, `pass@3`
-and confidence intervals per stage.
+Estimate per-stage first-attempt and within-three-attempt clearance rates over
+replicated runs. For stage-level comparisons, use explicit stage selections so
+every agent sees the same stages. Whole-board runs reach later stages only when
+they clear the earlier ones.
 
 ### Optional game mechanics
 

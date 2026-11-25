@@ -112,6 +112,21 @@ class ProvisionTest(unittest.TestCase):
         (box.workspace / "logs" / "app.log").unlink()
         self.assertEqual(box.integrity_violations(), ["logs/app.log"])
 
+    def test_adding_a_file_to_a_protected_directory_is_a_violation(self):
+        stage = load_stage(STAGES / "s005-log-search" / "stage.yaml")
+        stage.protected = ["logs"]
+        box = Sandbox.provision(stage, self.tmp / "a")
+        (box.workspace / "logs" / "extra.txt").write_text("new")
+        self.assertEqual(box.integrity_violations(), ["logs/extra.txt"])
+
+    def test_diff_budget_counts_added_removed_and_diff_header_like_lines(self):
+        box = Sandbox.provision(self.stage, self.tmp / "a")
+        path = box.workspace / "notes" / "meeting.md"
+        count = len(path.read_text().splitlines())
+        path.unlink()
+        (box.workspace / "other").write_text("++added\n--removed\n")
+        self.assertEqual(box.delta().changed_lines, count + 2)
+
     def test_snapshot_hashes_marks_missing(self):
         box = Sandbox.provision(self.stage, self.tmp / "a")
         self.assertEqual(snapshot_hashes(box.workspace, ["nope.txt"])["nope.txt"], "<missing>")

@@ -13,12 +13,13 @@ import time
 import unittest
 from pathlib import Path
 
-from engine.feedback import VERDICT_BUDGET, VERDICT_FAIL, VERDICT_INTEGRITY, VERDICT_PASS
+from engine.feedback import (VERDICT_BUDGET, VERDICT_ERROR, VERDICT_FAIL,
+                             VERDICT_INTEGRITY, VERDICT_PASS)
 from engine.harness.base import HarnessRequest
 from engine.harness.fake import FakeHarness
 from engine.harness.solve import SolveHarness
 from engine.orchestrator import Orchestrator, RunConfig
-from engine.spec import load_board
+from engine.spec import SpecError, load_board
 
 ROOT = Path(__file__).resolve().parent.parent
 BOARDS = ROOT / "boards"
@@ -127,6 +128,26 @@ class IntegrityTest(HarnessCase):
         self.assertTrue(stage.integrity_violation)
         self.assertFalse(stage.cleared)
         self.assertEqual(stage.attempts[0].verdict, VERDICT_INTEGRITY)
+        self.assertEqual(len(stage.attempts), 1)
+        self.assertEqual(record.status, VERDICT_INTEGRITY)
+
+
+class InfrastructureTest(unittest.TestCase):
+    def test_a_harness_error_voids_an_attempt_with_a_correct_artifact(self):
+        class FailedHarness(FakeHarness):
+            def run(self, request):
+                result = super().run(request)
+                result.exit_code = 1
+                return result
+
+        with tempfile.TemporaryDirectory() as tmp:
+            board = load_board(BOARDS / "smoke.yaml")
+            config = RunConfig(board=board, out_dir=Path(tmp))
+            adapter = FailedHarness({"s001-exact-edit": [{"write": {"notes/meeting.md": CORRECT}}]})
+            record = Orchestrator(config, adapter).run()
+        self.assertEqual(record.status, VERDICT_ERROR)
+        self.assertEqual(record.points, 0)
+        self.assertEqual(len(adapter.calls), 1)
 
 
 class MultiStageTest(HarnessCase):
@@ -154,7 +175,7 @@ class ConfigTest(HarnessCase):
         self.assertEqual(len(record.stages), 1)
 
     def test_unknown_stage_filter_is_an_error(self):
-        with self.assertRaises(ValueError):
+        with self.assertRaises(SpecError):
             self.play({}, board="two.yaml", only="s999-nope")
 
 

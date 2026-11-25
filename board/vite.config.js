@@ -10,6 +10,9 @@ export default defineConfig({
   build: { outDir: 'dist', emptyOutDir: true },
   server: {
     port: 5173,
-    proxy: { '/runs': 'http://localhost:8088' },
+    proxy: {
+      '/runs': 'http://localhost:8088',
+      '/catalog.json': 'http://localhost:8088',
+    },
   },
 })

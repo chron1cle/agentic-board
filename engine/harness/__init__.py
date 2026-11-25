@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+from .adapters import (AntigravityAdapter, ClineAdapter, CodexAdapter, CommandAdapter,
+                       GrokBuildAdapter, HermesAdapter, KiloAdapter, PiAdapter)
+from .t3code import T3CodeAdapter
 from .base import HarnessAdapter, HarnessRequest, HarnessResult
 from .fake import FakeHarness
 from .opencode import OpenCodeAdapter, resolve_default_model
@@ -9,6 +12,15 @@ from .solve import SolveHarness
 
 REGISTRY: dict[str, type[HarnessAdapter]] = {
     "opencode": OpenCodeAdapter,
+    "cline": ClineAdapter,
+    "kilo": KiloAdapter,
+    "codex": CodexAdapter,
+    "grokbuild": GrokBuildAdapter,
+    "antigravity": AntigravityAdapter,
+    "t3code": T3CodeAdapter,
+    "hermes": HermesAdapter,
+    "pi": PiAdapter,
+    "command": CommandAdapter,
     "fake": FakeHarness,
     "solve": SolveHarness,
 }

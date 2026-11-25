@@ -12,8 +12,9 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 
 from .feedback import AttemptRecord
+from .scoring import feedback_counts, feedback_uptake, first_try_rate
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 
 @dataclass
@@ -28,6 +29,7 @@ class StageResult:
     attempts: list[AttemptRecord] = field(default_factory=list)
     fingerprint: str = ""
     integrity_violation: bool = False
+    status: str = ""
     tool_calls: int = 0
     seconds: float = 0.0
     tokens: int = 0
@@ -51,6 +53,9 @@ class RunRecord:
     stages: list[StageResult] = field(default_factory=list)
     notes: list[str] = field(default_factory=list)
     schema: int = SCHEMA_VERSION
+    board_size: int | None = None
+    selected_stages: int | None = None
+    status: str = "benchmark"
 
     # -- derived metrics ---------------------------------------------------
     @property
@@ -67,27 +72,17 @@ class RunRecord:
         for stage in self.stages:
             if not stage.cleared:
                 return stage.id
+        if self.board_size is not None and self.stage_reached < self.board_size:
+            return "selection_complete"
         return "complete"
 
     @property
     def first_try_rate(self) -> float:
-        cleared = [s for s in self.stages if s.cleared]
-        if not cleared:
-            return 0.0
-        return round(sum(1 for s in cleared if s.attempts_used == 1) / len(cleared), 4)
+        return first_try_rate(self.stages)
 
     @property
     def feedback_uptake(self) -> float:
-        transitions = passes = 0
-        for stage in self.stages:
-            for earlier, later in zip(stage.attempts, stage.attempts[1:]):
-                if earlier.verdict == "fail":
-                    transitions += 1
-                    if later.verdict == "pass":
-                        passes += 1
-        if not transitions:
-            return 0.0
-        return round(passes / transitions, 4)
+        return feedback_uptake(self.stages)
 
     @property
     def totals(self) -> dict:
@@ -95,7 +90,7 @@ class RunRecord:
             "tool_calls": sum(s.tool_calls for s in self.stages),
             "seconds": round(sum(s.seconds for s in self.stages), 2),
             "tokens": sum(s.tokens for s in self.stages),
-            "attempts": sum(len(s.attempts) for s in self.stages),
+            "attempts": sum(a.started for s in self.stages for a in s.attempts),
         }
 
     def cumulative_score(self) -> list[dict]:
@@ -131,6 +126,7 @@ class RunRecord:
             "board": self.board,
             "board_version": self.board_version,
             "seed": self.seed,
+            "status": self.status,
             "started": self.started,
             "finished": self.finished,
             "notes": self.notes,
@@ -141,7 +137,9 @@ class RunRecord:
                 "points": self.points,
                 "firstTryRate": self.first_try_rate,
                 "feedbackUptake": self.feedback_uptake,
-                "boardSize": len(self.stages),
+                "feedbackTrials": feedback_counts(self.stages)[1],
+                "boardSize": self.board_size if self.board_size is not None else len(self.stages),
+                "selectedStages": self.selected_stages,
                 **self.totals,
             },
             "timeline": self.cumulative_score(),

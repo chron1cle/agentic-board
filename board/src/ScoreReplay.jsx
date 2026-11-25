@@ -1,12 +1,11 @@
-import { useMemo } from 'react'
-import { regionOf } from './layout.js'
+import { useId, useMemo } from 'react'
+import { regionOf, resolvedIndex, scoreAt } from './layout.js'
 
 /**
- * The score replay: a bar per stage that fills as the playhead passes it, plus a
- * line for the cumulative score. Pure SVG, so it is cheap enough to redraw on
- * every animation frame and it still prints nicely.
+ * Show the recorded score path with completed stages highlighted.
  */
 export default function ScoreReplay({ timeline, progress }) {
+  const clipId = useId()
   const W = 900
   const H = 420
   const pad = { l: 56, r: 24, t: 24, b: 56 }
@@ -24,11 +23,17 @@ export default function ScoreReplay({ timeline, progress }) {
     [timeline, step],
   )
 
-  const head = pad.l + step * (progress + 0.5)
+  const head = Math.max(pad.l, pad.l + step * (progress + 0.5))
 
   return (
     <div className="replay">
-      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet">
+      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid meet"
+        role="img" aria-label="Cumulative score by benchmark stage">
+        <defs>
+          <clipPath id={clipId}>
+            <rect x={pad.l - 2} y={0} width={Math.max(0, head - pad.l + 3)} height={H} />
+          </clipPath>
+        </defs>
         {[0, 0.25, 0.5, 0.75, 1].map((f) => (
           <g key={f}>
             <line x1={pad.l} x2={W - pad.r} y1={y(max * f)} y2={y(max * f)} className="grid" />
@@ -39,7 +44,7 @@ export default function ScoreReplay({ timeline, progress }) {
         ))}
 
         {timeline.map((row, i) => {
-          const passed = progress >= i
+          const passed = resolvedIndex(progress) >= i
           const w = step * 0.52
           const x = pad.l + step * (i + 0.5) - w / 2
           const top = y(row.cumulative)
@@ -67,9 +72,10 @@ export default function ScoreReplay({ timeline, progress }) {
           )
         })}
 
-        <polyline points={line} className="score-line" />
+        <polyline points={line} className="score-line projected" />
+        <polyline points={line} className="score-line" clipPath={`url(#${clipId})`} />
         <line x1={head} x2={head} y1={pad.t - 8} y2={pad.t + innerH} className="playhead" />
-        <circle cx={head} cy={y(Math.max(0, timeline[Math.round(progress)]?.cumulative || 0))} r={5} className="head-dot" />
+        <circle cx={head} cy={y(scoreAt(timeline, progress))} r={5} className="head-dot" />
       </svg>
       <p className="hint">
         Each bar is a stage, coloured by its region. The line is the running total; the playhead

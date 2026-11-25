@@ -25,8 +25,8 @@ class ValidateTest(unittest.TestCase):
     def test_the_shipped_board_validates(self):
         code, out = run_cli("validate")
         self.assertEqual(code, 0)
-        self.assertIn("10 stages", out)
-        self.assertIn("s010-codemod-migration", out)
+        self.assertIn("20 stages", out)
+        self.assertIn("s020-swap-relays", out)
 
     def test_a_broken_board_is_exit_1(self):
         with tempfile.TemporaryDirectory() as tmp:

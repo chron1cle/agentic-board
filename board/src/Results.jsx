@@ -1,17 +1,30 @@
 import { useMemo, useState } from 'react'
 import { regionOf } from './layout.js'
 
+const STATUS = {
+  archive: 'Archived runs',
+  control: 'Control runs',
+  partial: 'Partial runs',
+  telemetry_incomplete: 'Runs without tool accounting',
+  infrastructure_error: 'Infrastructure errors',
+  integrity_violation: 'Disqualified runs',
+}
+
+function cohortOf(run) {
+  return JSON.stringify([run.board, run.boardVersion, run.seed, run.schema, run.status])
+}
+
 const COLUMNS = [
   { key: 'harness', label: 'Harness', get: (r) => r.harness },
   { key: 'model', label: 'Model', get: (r) => r.model },
   { key: 'stageReached', label: 'Stage', get: (r) => `${r.stageReached}/${r.boardSize}`, num: (r) => r.stageReached },
   { key: 'points', label: 'Points', get: (r) => r.points, num: (r) => r.points },
   { key: 'firstTryRate', label: 'First-try', get: (r) => `${Math.round(r.firstTryRate * 100)}%`, num: (r) => r.firstTryRate },
-  { key: 'feedbackUptake', label: 'Uptake', get: (r) => `${Math.round(r.feedbackUptake * 100)}%`, num: (r) => r.feedbackUptake },
+  { key: 'feedbackUptake', label: 'Uptake', get: (r) => r.feedbackTrials ? `${Math.round(r.feedbackUptake * 100)}% (${r.feedbackTrials})` : '—', num: (r) => r.feedbackTrials ? r.feedbackUptake : -1 },
   { key: 'stoppedAt', label: 'Stopped at', get: (r) => r.stoppedAt },
-  { key: 'toolCalls', label: 'Tools', get: (r) => r.toolCalls, num: (r) => r.toolCalls },
+  { key: 'toolCalls', label: 'Tools', get: (r) => r.toolsReported === false ? '—' : r.toolCalls, num: (r) => r.toolsReported === false ? -1 : r.toolCalls },
   { key: 'seconds', label: 'Time', get: (r) => `${Math.round(r.seconds)}s`, num: (r) => r.seconds },
-  { key: 'tokens', label: 'Tokens', get: (r) => r.tokens, num: (r) => r.tokens },
+  { key: 'tokens', label: 'Tokens', get: (r) => r.tokensReported === false ? '—' : r.tokens, num: (r) => r.tokensReported === false ? -1 : r.tokens },
 ]
 
 /** Tiny step chart so a row shows its shape, not just its total. */
@@ -30,16 +43,28 @@ function Sparkline({ timeline, width = 120, height = 26 }) {
 export default function Results({ index, current, onOpen, onReplay }) {
   const [sort, setSort] = useState({ key: 'stageReached', dir: -1 })
 
+  const [selected, setSelected] = useState(null)
+  const cohorts = new Map()
+  for (const run of index?.runs || []) {
+    const key = cohortOf(run)
+    if (!cohorts.has(key)) cohorts.set(key, run)
+  }
+  const currentCohort = current && cohortOf(current)
+  const cohort = cohorts.has(selected) ? selected : cohorts.has(currentCohort) ? currentCohort :
+    [...cohorts].find(([, run]) => run.status === 'benchmark')?.[0] ||
+    cohorts.keys().next().value
+  const ranked = cohorts.get(cohort)?.status === 'benchmark'
+
   const runs = useMemo(() => {
     const col = COLUMNS.find((c) => c.key === sort.key) || COLUMNS[2]
     const get = col.num || ((r) => String(col.get(r)))
-    return [...(index?.runs || [])].sort((a, b) => {
+    return (index?.runs || []).filter((run) => cohortOf(run) === cohort).sort((a, b) => {
       const x = get(a)
       const y = get(b)
       if (x === y) return 0
       return (x > y ? 1 : -1) * sort.dir
     })
-  }, [index, sort])
+  }, [index, sort, cohort])
 
   const click = (key) =>
     setSort((s) => (s.key === key ? { key, dir: -s.dir } : { key, dir: -1 }))
@@ -48,21 +73,36 @@ export default function Results({ index, current, onOpen, onReplay }) {
   if (!runs.length) {
     return (
       <div className="empty">
-        <h2>No runs yet</h2>
-        <p>
-          Play the board once and it will appear here:
-          <code>python3 -m engine run --harness fake</code>
-        </p>
+        <h2>No completed runs</h2>
+        <p>Reload once a benchmark finishes, or open <a href="#/how-to">How to</a> for setup.</p>
       </div>
     )
   }
 
   return (
     <div className="results">
+      <div className="results-heading">
+        <div>
+          <h2>Saved results</h2>
+          <p>Choose <strong>View</strong> to inspect a finished run or <strong>Replay</strong> to play it from the start.</p>
+        </div>
+        <label>
+          Comparison group
+          <select value={cohort} onChange={(event) => setSelected(event.target.value)}>
+            {[...cohorts].map(([key, run]) => (
+              <option key={key} value={key}>
+                {run.board} v{run.boardVersion} · seed {run.seed} · {STATUS[run.status] || 'Benchmark runs'}
+              </option>
+            ))}
+          </select>
+        </label>
+      </div>
       <table>
         <thead>
           <tr>
-            <th className="rank">#</th>
+            {ranked && <th className="rank">#</th>}
+            <th scope="col">Run</th>
+            <th scope="col">Open run</th>
             {COLUMNS.map((c) => (
               <th key={c.key} onClick={() => click(c.key)} className={sort.key === c.key ? 'sorted' : ''}>
                 {c.label}
@@ -70,13 +110,22 @@ export default function Results({ index, current, onOpen, onReplay }) {
               </th>
             ))}
             <th>Shape</th>
-            <th>Actions</th>
           </tr>
         </thead>
         <tbody>
           {runs.map((row, i) => (
             <tr key={row.run} className={current?.run === row.run ? 'current' : ''}>
-              <td className="rank">{i + 1}</td>
+              {ranked && <td className="rank">{i + 1}</td>}
+              <th scope="row" className="result-id">
+                <span className="result-id-name" title={row.run}>{row.run}</span>
+                {current?.run === row.run && <span className="result-current">Selected</span>}
+              </th>
+              <td><div className="actions">
+                <button onClick={() => onOpen(row)} aria-label={`View ${row.run}`}>View</button>
+                <button className="primary" onClick={() => onReplay(row)} aria-label={`Replay ${row.run}`}>
+                  ▶ Replay
+                </button>
+              </div></td>
               {COLUMNS.map((c) => (
                 <td key={c.key} className={c.num ? 'num' : ''}>
                   {c.get(row)}
@@ -84,12 +133,6 @@ export default function Results({ index, current, onOpen, onReplay }) {
               ))}
               <td>
                 <Sparkline timeline={row.timeline || []} />
-              </td>
-              <td className="actions">
-                <button onClick={() => onOpen(row)}>Board</button>
-                <button className="primary" onClick={() => onReplay(row)}>
-                  ▶ Replay
-                </button>
               </td>
             </tr>
           ))}

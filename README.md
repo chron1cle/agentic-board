@@ -4,20 +4,19 @@ A benchmark for coding agents, presented as a board game. Each board node is a c
 task with a machine-checkable outcome. An agent plays the board; how far it gets is
 the result.
 
-Everything here runs on one machine, offline, with no servers and no external
-services. The engine is Python with exactly one dependency, PyYAML; a test fails if a
-second one appears. The tests are `unittest`. The only network traffic in a benchmark
-is whatever the harness itself needs to reach its model.
+The engine and reference controls run locally with Python and PyYAML. The CLI
+harnesses can reach their model providers and inherit the operator's
+network access and configuration.
 
 ## The idea in one paragraph
 
 An agent is dropped at stage 1 — something like *"edit this markdown file and make
 exactly these changes"* — and given a fresh sandbox and a fresh harness session. When
-it finishes, an oracle it cannot see or call checks the output. Pass, and it advances.
+it finishes, the engine calls the stage oracle to check the output. Pass, and it advances.
 Fail, and it gets a terse error report and another attempt, from a pristine workspace
 every time. Three failures on one stage ends the run, and the highest stage cleared
 becomes its level. Stages escalate from single-file text edits to a whole-codebase
-migration, and every one of them has an outcome a machine can verify.
+migration and then to stateful routing with a growing set of rules.
 
 ## Headline metrics
 
@@ -25,15 +24,17 @@ migration, and every one of them has an outcome a machine can verify.
 | --- | --- | --- |
 | **Stage Reached** | highest stage cleared | the level. One number, comparable across harnesses |
 | **First-Try Rate** | share of cleared stages cleared on attempt 1 | does it get it right, or does it brute-force |
-| **Feedback Uptake** | P(pass on attempt k+1 \| it failed attempt k) | can it use an error message |
+| **Feedback Uptake** | fraction of observed retries that pass after an oracle rejection | retry conversion under the actual feedback and time budgets |
 
-Supporting numbers (tool calls, tokens, wall clock, attempts) are recorded too, but
-they are diagnostics, not the score.
+Runs record observed tool calls, harness time, reported tokens, and started
+attempts. Tool counts affect points and depend on how the harness exposes its
+tools. Feedback uptake is shown with its retry count or left blank when there
+were no eligible retries.
 
 ## The board
 
-Ten stages, one spine, six regions. `python3 -m engine validate` prints the same
-table from the specs.
+Board v2 contains twenty stages across six regions. The first ten are the v1
+spine. `python3 -m engine validate` lists all stages.
 
 | # | Stage | Tier | Region | What it tests | Base |
 | --- | --- | --- | --- | --- | --- |
@@ -48,10 +49,32 @@ table from the specs.
 | 9 | `s009-tests-that-test` | 5 | Spire of Systems | write tests that kill injected mutants | 300 |
 | 10 | `s010-codemod-migration` | 6 | The Summit | migrate a codebase from a legacy API to a v2 SDK | 350 |
 
-Base is `100 × (1 + 0.5 × (tier − 1))`. Cleared on attempt 1 you get base × 1.2,
-attempt 2 × 0.75, attempt 3 × 0.50, with a small penalty for blowing the tool
-budget. A perfect run is 2340 points; the number that actually matters is stage
-reached, because points reward a run that a rule ended fairly.
+The ten Summit routing levels add one switch and one rule per level. Each
+retains the prior rules and grades independently on a fresh workspace. A hidden
+graph makes every switch configuration reachable at the start node. That
+portion of the state space doubles at each step, from 2 configurations to 1,024.
+
+| Level | Added rule | Reachable switch configurations |
+| --- | --- | ---: |
+| 11 | Toggle switches and satisfy arrival requirements | 2 |
+| 12 | Gates that require a switch to be on | 4 |
+| 13 | Gates that require a switch to be off | 8 |
+| 14 | Clear switches | 16 |
+| 15 | Set switches | 32 |
+| 16 | Discounts for switches that are on | 64 |
+| 17 | Exact terminal switch configuration | 128 |
+| 18 | Discounts for switches that are off | 256 |
+| 19 | Copy switch values | 512 |
+| 20 | Swap switch values | 1,024 |
+
+Each level compares the submitted JSON Lines program with an independent
+reference on seeded graphs, targeted rule checks, and cases exercising every
+switch. The exponential growth is a property of the test instances. Model pass
+rates and the relative difficulty of the routing levels still need calibration.
+
+Base points are `100 × (1 + 0.5 × (tier − 1))`. Clear multipliers are 1.2, 0.75,
+and 0.50 for attempts one through three, with penalties for exceeding the
+tool budget. A perfect v2 run earns 6,540 points.
 
 Every stage ships two **controls**: a `fixed` workspace that must pass the oracle and
 an `empty` one that must fail it. A stage whose oracle accepts nothing is not a stage,
@@ -76,7 +99,7 @@ python3 -m unittest discover -s tests -t . # the engine's own test suite
 
 After that one install, nothing here needs credentials or a network: the tests are
 stdlib `unittest`, the fixtures are in-repo, and no oracle reaches outside the
-sandbox. If those four are green, the instrument is sound.
+sandbox. These checks cover engine behavior and oracle controls.
 
 ## Running a benchmark
 
@@ -97,38 +120,81 @@ you blame a model: *is this board completable at all?*
 
 ```bash
 python3 -m engine run --harness solve --run-id reference
-# stage reached 10 / 10, points 2340.0, first-try rate 100%
+# stage reached 20 / 20, points 6540.0, first-try rate 100%
 ```
 
-If that ever stops reaching stage 10, a stage is broken. CI runs it for exactly that
-reason. It is also the cheapest way to get a full board to look at in the viewer.
+CI uses this run to verify a complete playthrough. It is also the cheapest way to get a full board to look at in the viewer.
 
 ### With a real harness
 
-`opencode` is wired up. Put your provider credentials wherever opencode normally
-finds them, then:
+Install and authenticate the harness separately, then select it by name. Each
+attempt starts at the root of a fresh workspace.
+
+| `--harness` | Executable | Model selection |
+| --- | --- | --- |
+| `opencode` | `opencode` | OpenCode model ID |
+| `cline` | `cline` | `provider/model`, or a model ID for Cline's default provider |
+| `kilo` | `kilo` | Kilo `provider/model` |
+| `codex` | `codex` | Codex model ID |
+| `grokbuild` | `grok` | Grok Build model ID |
+| `antigravity` | `agy` or `antigravity` | Antigravity model ID |
+| `t3code` | `t3code-threads` | `instance/model` or the configured T3 provider |
+| `pi` | `pi` | Pi `provider/model` |
+| `hermes` | `hermes` | Model ID on the configured Hermes provider |
 
 ```bash
-# play the whole board with opencode's configured default model
-python3 -m engine run --harness opencode --run-id opencode-default
-
-# or name a model explicitly
-python3 -m engine run --harness opencode --model provider/model --run-id run-2
+python3 -m engine run --harness codex --limit 1
+python3 -m engine run --harness kilo --model provider/model --limit 1
 ```
+
+T3 Code uses the [t3code-threads client](https://github.com/kcosr/t3code-threads).
+Configure it to reach a T3 server running on the benchmark host with access to
+the attempt directories. It creates a new thread per attempt and uses T3's
+automatic edit-approval mode. Its completion output lacks tool and token
+counts, so full T3 runs are replayable and excluded from ranked results.
+
+Hermes uses its one-shot JSON stream and local file and terminal toolsets.
+Configure the Hermes profile's terminal cwd as `.` so it starts in the
+attempt directory. Pi runs its coding agent with session persistence disabled.
+To benchmark a DeepSeek **model**, select it under a configured harness such
+as Pi, Kilo, or OpenCode. This records the model together with the tool runner
+that actually edits and tests the workspace.
+
+#### Bring your own agent
+
+Use `--harness command --harness-bin /path/to/wrapper` for another local agent,
+an SDK, or an ACP client that can run a single turn. The wrapper runs in the
+attempt workspace and receives one JSON object on stdin with `prompt`,
+`model`, `stage_id`, `attempt`, and `timeout_s`. The wrapper owns provider
+authentication and must stop its agent before it exits.
+
+On stdout, emit one JSON object per line. Emit one `tool.call` for each
+executed call, with an optional unique `id`, and finish with one `result`
+reporting success and total tokens. Use stderr for diagnostics. For example:
+
+```jsonl
+{"type":"tool.call","tool":"read","id":"call-1"}
+{"type":"result","ok":true,"tokens":145,"text":"Finished"}
+```
+
+The engine verifies workspace artifacts after the wrapper exits. Its basename
+identifies the command adapter in results.
 
 Useful flags:
 
 | Flag | Meaning |
 | --- | --- |
-| `--board boards/v1.yaml` | which board (default: the ten-stage spine) |
+| `--board boards/v1.yaml` | play the original ten-stage board. The default is `boards/v2.yaml`. |
 | `--limit N` | play only the first N stages — good for a cheap calibration run |
+| `--harness-bin PATH` | override the executable for an adapter. Required for `command`. |
 | `--only s006-sessionizer` | one stage, for authoring or debugging |
-| `--seed N` | recorded in the run record; stages are deterministic so this is bookkeeping |
+| `--seed N` | selects hidden graph cases on levels 11–20. The v1 fixtures are static. |
 | `--out DIR` | where runs land (default `runs/`) |
 | `--quiet` | just the summary, no live event stream |
 
-A full board costs up to 3 attempts per stage and up to ~3.5 model-hours. Budget
-accordingly, and use `--limit 3` when you are calibrating.
+The per-stage clock is shared across at most three attempts. Use `--only` to
+sample a specific routing level or `--limit` to sample the opening of the board.
+For example, `--only s020-swap-relays --seed 37` plays the final level alone.
 
 ### What a run leaves behind
 
@@ -140,9 +206,9 @@ runs/<run-id>/<stage>/attempt<N>.transcript.json   prompt + raw harness output
 runs/index.json                        every run, for the results viewer
 ```
 
-`run.json` is the only thing the viewer reads. That is deliberate: the score sheet,
-the replay tape, and the board state are one file, so the renderer can never
-disagree with the scoreboard.
+The viewer takes completed run scores and playback from `run.json` and discovers
+runs through `runs/index.json`. During an active run, progress appears in
+the terminal. Reload the viewer after the run finishes.
 
 ### A published example
 
@@ -171,27 +237,16 @@ tokens          194,347
 | 9 | `s009-tests-that-test` | 5 | 6 | 238s |
 | 10 | `s010-codemod-migration` | 6 | 12 | 193s |
 
-Read that honestly, in both directions. A clean sweep on the first attempt of every
-stage says this model is **at or above the top of this board**: `s009` (write tests
-that kill injected mutants) and `s010` (migrate a codebase to a v2 SDK, verified by a
-hidden checker that includes deleted files) fell to four to twelve tool calls each.
-So `v1` will not separate this model from a slightly better one — it separates weak
-agents from competent ones, and its ceiling is now measured. The fix is more stages
-above tier 6, not softer oracles.
-
-Two numbers in that block are artifacts of a perfect run, not achievements. Feedback
-uptake is 0% because there was no failed attempt to learn from; the metric is only
-meaningful below 100% first-try. And the tool counts are low partly because a single
-turn of a strong agent does what a weaker one takes ten calls to stumble into.
+This archived run demonstrates one harness-model pairing clearing v1 at seed 1.
+All stages cleared on the first try, so the archive contains zero observations
+of feedback uptake.
 
 To see it: `python3 -m engine serve`, then open the Results tab and press Replay.
 
 ## The viewer
 
-Two surfaces, one app: the **3D board** (a stage is a node on an ascending spine,
-grouped into regions, with a piece that travels it) and the **results table** (every
-run you have ever recorded, sortable, with a **Replay** button that animates the
-score climbing stage by stage).
+The viewer combines a 3D board, score replay, results table, test catalog, and
+connector setup guide.
 
 ```bash
 cd board
@@ -201,12 +256,11 @@ cd ..
 python3 -m engine serve  # http://localhost:8088/
 ```
 
-`engine serve` rebuilds `runs/index.json` first, then serves exactly two prefixes:
-the built viewer and the runs directory. It does not serve the repository, so stage
-answer keys and `.git` stay off the network.
+`engine serve` rebuilds `runs/index.json` and serves the built viewer, public test
+and connector metadata from `/catalog.json`, and allowlisted run records.
 
-For development, `cd board && npm run dev` gives a hot-reloading server on :5173 that
-proxies `/runs` to an `engine serve` on :8088.
+For development, `cd board && npm run dev` gives a hot-reloading server on :5173
+that proxies `/runs` and `/catalog.json` to `engine serve` on :8088.
 
 In the app:
 
@@ -214,8 +268,10 @@ In the app:
   three crystals next to a focused node are its three attempts, lit by verdict.
 - **Score replay** — the same run as a chart. Press **Replay** and the playhead walks
   the spine while the cumulative score fills in. Speed control and a scrub bar.
-- **Results** — one row per run, sorted by stage reached. **Replay** on any row jumps
-  straight into that run's score animation.
+- **Results** — completed runs grouped by comparison cohort. Choose **Replay** to
+  watch the run on the board.
+- **Tests** — browse stage tasks, verification methods, scoring, and budgets.
+- **How to** — configure built-in adapters, connect a custom wrapper, and load results.
 
 ## Adding a stage
 
@@ -226,22 +282,26 @@ In the app:
 3. `stages/<id>/oracle/` — the verification. Never copied into the sandbox, never
    callable by the agent.
 4. `stages/<id>/controls/{fixed,empty}` — the two controls.
-5. Add the id to `boards/v1.yaml`, then `python3 -m engine validate && python3 -m engine controls`.
+5. Add the id to the intended board file, then `python3 -m engine validate && python3 -m engine controls`.
 
 Oracle scripts run with the working directory set to the sandbox workspace, so use
 cwd-relative paths for agent files and `__file__`-relative paths for hidden fixtures.
 
-## Honest limits
+## Measurement limits
 
-- **The local sandbox is not a security boundary.** Attempts run as your user, so an
-  agent that wanted to escape could. What the sandbox gives you is determinism (a
-  byte-identical workspace per attempt, checked by fingerprint) and accident
-  proofing (protected paths, no network by default, integrity checks that disqualify
-  a run that touches the oracle). Real isolation means the container path described in
-  DESIGN.md, which is not implemented here.
-- **Scores are comparable within a board version, not across versions.** Changing a
-  stage changes what the number means.
-- **A stage is only as good as its oracle.** That is why the controls are enforced.
+- The local runner gives agents the operator's filesystem and network access.
+  Oracle sources and fixed controls are reachable on the host. Treat local
+  results as cooperative measurements until the verifier has an isolation
+  boundary.
+- The results table ranks full benchmark runs within a board, version, seed,
+  and record schema. Controls, partial runs, archives, infrastructure errors,
+  and integrity violations are available for replay.
+- A result describes a harness and model together. Use an explicit model
+  identifier and control provider and harness settings across runs. One archived run cannot establish model or harness
+  rankings.
+- Token totals reflect completed usage reports and can be incomplete, including
+  on timeouts. Hard token ceilings, a whole-run cap, and a reference speed
+  median remain unimplemented.
 
 ## Layout
 
@@ -249,10 +309,11 @@ cwd-relative paths for agent files and `__file__`-relative paths for hidden fixt
 DESIGN.md              the design record — start here
 AGENTS.md              rules for agents working in this repo
 SECURITY.md            secret-handling policy
-boards/v1.yaml         the ten-stage spine
+boards/v1.yaml         the original ten-stage spine
+boards/v2.yaml         the default twenty-stage spine
 stages/                stage definitions: workspace, oracle, controls
 engine/                orchestrator, oracles, sandbox, harness adapters, CLI
-engine/harness/        one adapter per harness (opencode, fake, solve)
+engine/harness/        native adapters, command adapter, and controls
 board/                 react-three-fiber board + results viewer
 tests/                 engine unit tests
 tools/audit-secrets.py secret audit gate (pre-commit + CI)

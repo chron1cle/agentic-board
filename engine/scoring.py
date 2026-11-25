@@ -33,7 +33,7 @@ def score_stage(tier: int, attempt_n: int, tools_used: int = 0, tool_budget: int
     points = value * mult
     if attempt_n == 1:
         points += value * FIRST_TRY_BONUS
-    points *= (1.0 - budget_penalty(tools_used, tool_budget))
+    points *= (max(0.0, 1.0 - budget_penalty(tools_used, tool_budget)))
     if reference_seconds and 0 < seconds < reference_seconds:
         points *= (1.0 + SPEED_BONUS)
     return round(points, 2)
@@ -47,19 +47,20 @@ def first_try_rate(stage_results) -> float:
     return round(sum(1 for r in cleared if r.attempts_used == 1) / len(cleared), 4)
 
 
-def feedback_uptake(stage_results) -> float:
-    """P(pass on attempt k+1 | failed attempt k), pooled over the whole run.
-
-    This is the most interesting number in the system: it separates an agent
-    that can use an error report from one that just retries until lucky.
-    """
-    transitions = passes = 0
+def feedback_counts(stage_results) -> tuple[int, int]:
+    """Count passes and observed retries after oracle rejection."""
+    passes = transitions = 0
     for result in stage_results:
         for earlier, later in zip(result.attempts, result.attempts[1:]):
-            if earlier.verdict == "fail":
+            if (earlier.verdict == "fail" and later.started
+                    and later.verdict in ("pass", "fail", "budget_exhausted")):
                 transitions += 1
                 if later.verdict == "pass":
                     passes += 1
-    if not transitions:
-        return 0.0
-    return round(passes / transitions, 4)
+    return passes, transitions
+
+
+def feedback_uptake(stage_results) -> float:
+    """Observed probability of passing a retry after an oracle rejection."""
+    passes, transitions = feedback_counts(stage_results)
+    return round(passes / transitions, 4) if transitions else 0.0

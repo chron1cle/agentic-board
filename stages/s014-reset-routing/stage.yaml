@@ -1,0 +1,14 @@
+id: s014-reset-routing
+name: The Reset Relay
+tier: 6
+region: summit
+capabilities: [state-space-search, graph-algorithms, contract-implementation]
+brief_file: brief.md
+seedable: true
+timeout_s: 420
+tool_budget: 65
+oracles:
+  - kind: differential
+    entry: checker.py
+    timeout_s: 25
+    reveal: standard
