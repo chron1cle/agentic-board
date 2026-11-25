@@ -1,0 +1,1048 @@
+{
+  "schema": 1,
+  "run": "opencode-default",
+  "harness": "opencode",
+  "model": "default (ms-s1/halogen)",
+  "board": "agentic-board",
+  "board_version": "1",
+  "seed": 1,
+  "started": 1795571038.5484946,
+  "finished": 1795572092.9017265,
+  "notes": [],
+  "stages": [
+    {
+      "id": "s001-exact-edit",
+      "name": "The Ledger of Whispers",
+      "tier": 1,
+      "region": "plains-of-edit",
+      "cleared": true,
+      "attempts_used": 1,
+      "points": 120.0,
+      "attempts": [
+        {
+          "n": 1,
+          "verdict": "pass",
+          "tools": 5,
+          "s": 21.13,
+          "tokens": 10885,
+          "note": "",
+          "checks": [
+            {
+              "name": "notes/meeting.md",
+              "ok": true,
+              "detail": "matches after normalization",
+              "evidence": "",
+              "reveal": "minimal",
+              "tier": "B"
+            },
+            {
+              "name": "diff-budget",
+              "ok": true,
+              "detail": "5 line(s) changed, limit 6",
+              "evidence": "",
+              "reveal": "minimal",
+              "tier": "C"
+            }
+          ]
+        }
+      ],
+      "fingerprint": "dc8bd89c156f5ae0",
+      "integrity_violation": false,
+      "tool_calls": 5,
+      "seconds": 21.13,
+      "tokens": 10885
+    },
+    {
+      "id": "s002-json-repair",
+      "name": "The Cracked Manifest",
+      "tier": 1,
+      "region": "plains-of-edit",
+      "cleared": true,
+      "attempts_used": 1,
+      "points": 120.0,
+      "attempts": [
+        {
+          "n": 1,
+          "verdict": "pass",
+          "tools": 4,
+          "s": 26.88,
+          "tokens": 11198,
+          "note": "",
+          "checks": [
+            {
+              "name": "parses-as-json",
+              "ok": true,
+              "detail": "command succeeded",
+              "evidence": "",
+              "reveal": "standard",
+              "tier": "A"
+            },
+            {
+              "name": "config/app.json",
+              "ok": true,
+              "detail": "structure matches",
+              "evidence": "",
+              "reveal": "minimal",
+              "tier": "B"
+            },
+            {
+              "name": "diff-budget",
+              "ok": true,
+              "detail": "9 line(s) changed, limit 16",
+              "evidence": "",
+              "reveal": "minimal",
+              "tier": "C"
+            }
+          ]
+        }
+      ],
+      "fingerprint": "3c0f7739d73b809f",
+      "integrity_violation": false,
+      "tool_calls": 4,
+      "seconds": 26.88,
+      "tokens": 11198
+    },
+    {
+      "id": "s003-rename-symbol",
+      "name": "The Renaming of the Account",
+      "tier": 2,
+      "region": "caverns-of-search",
+      "cleared": true,
+      "attempts_used": 1,
+      "points": 180.0,
+      "attempts": [
+        {
+          "n": 1,
+          "verdict": "pass",
+          "tools": 4,
+          "s": 25.65,
+          "tokens": 11081,
+          "note": "",
+          "checks": [
+            {
+              "name": "test-suite",
+              "ok": true,
+              "detail": "command succeeded",
+              "evidence": "",
+              "reveal": "full",
+              "tier": "A"
+            },
+            {
+              "name": "old-name-gone",
+              "ok": true,
+              "detail": "no trace of the old name",
+              "evidence": "",
+              "reveal": "full",
+              "tier": "D"
+            },
+            {
+              "name": "new-name-defined",
+              "ok": true,
+              "detail": "billing/accounts.py defines get_account",
+              "evidence": "",
+              "reveal": "full",
+              "tier": "D"
+            },
+            {
+              "name": "callers-updated",
+              "ok": true,
+              "detail": "4 file(s) reference the new name, expected at least 4",
+              "evidence": "",
+              "reveal": "full",
+              "tier": "D"
+            },
+            {
+              "name": "package-export-clean",
+              "ok": true,
+              "detail": "",
+              "evidence": "",
+              "reveal": "full",
+              "tier": "D"
+            },
+            {
+              "name": "diff-budget",
+              "ok": true,
+              "detail": "18 line(s) changed, limit 40",
+              "evidence": "",
+              "reveal": "minimal",
+              "tier": "C"
+            }
+          ]
+        }
+      ],
+      "fingerprint": "4c1d32c19570e2f6",
+      "integrity_violation": false,
+      "tool_calls": 4,
+      "seconds": 25.65,
+      "tokens": 11081
+    },
+    {
+      "id": "s004-offbyone",
+      "name": "The Off-by-One Catacombs",
+      "tier": 2,
+      "region": "caverns-of-search",
+      "cleared": true,
+      "attempts_used": 1,
+      "points": 180.0,
+      "attempts": [
+        {
+          "n": 1,
+          "verdict": "pass",
+          "tools": 4,
+          "s": 39.3,
+          "tokens": 12776,
+          "note": "",
+          "checks": [
+            {
+              "name": "imports",
+              "ok": true,
+              "detail": "",
+              "evidence": "",
+              "reveal": "full",
+              "tier": "D"
+            },
+            {
+              "name": "page_count",
+              "ok": true,
+              "detail": "all cases correct",
+              "evidence": "",
+              "reveal": "full",
+              "tier": "D"
+            },
+            {
+              "name": "span_length",
+              "ok": true,
+              "detail": "all cases correct",
+              "evidence": "",
+              "reveal": "full",
+              "tier": "D"
+            },
+            {
+              "name": "page_items",
+              "ok": true,
+              "detail": "all pages correct",
+              "evidence": "",
+              "reveal": "full",
+              "tier": "D"
+            },
+            {
+              "name": "top_n",
+              "ok": true,
+              "detail": "all cases correct",
+              "evidence": "",
+              "reveal": "full",
+              "tier": "D"
+            },
+            {
+              "name": "running_totals",
+              "ok": true,
+              "detail": "all cases correct",
+              "evidence": "",
+              "reveal": "full",
+              "tier": "D"
+            },
+            {
+              "name": "diff-budget",
+              "ok": true,
+              "detail": "12 line(s) changed, limit 30",
+              "evidence": "",
+              "reveal": "minimal",
+              "tier": "C"
+            }
+          ]
+        }
+      ],
+      "fingerprint": "edf751cd43025887",
+      "integrity_violation": false,
+      "tool_calls": 4,
+      "seconds": 39.3,
+      "tokens": 12776
+    },
+    {
+      "id": "s005-log-search",
+      "name": "The Whispering Logs",
+      "tier": 2,
+      "region": "caverns-of-search",
+      "cleared": true,
+      "attempts_used": 1,
+      "points": 180.0,
+      "attempts": [
+        {
+          "n": 1,
+          "verdict": "pass",
+          "tools": 4,
+          "s": 25.48,
+          "tokens": 12949,
+          "note": "",
+          "checks": [
+            {
+              "name": "report.json",
+              "ok": true,
+              "detail": "structure matches",
+              "evidence": "",
+              "reveal": "minimal",
+              "tier": "B"
+            },
+            {
+              "name": "report-is-json",
+              "ok": true,
+              "detail": "command succeeded",
+              "evidence": "",
+              "reveal": "standard",
+              "tier": "A"
+            }
+          ]
+        }
+      ],
+      "fingerprint": "c1c086958a075155",
+      "integrity_violation": false,
+      "tool_calls": 4,
+      "seconds": 25.48,
+      "tokens": 12949
+    },
+    {
+      "id": "s006-sessionizer",
+      "name": "The Session Weaver",
+      "tier": 3,
+      "region": "the-foundry",
+      "cleared": true,
+      "attempts_used": 1,
+      "points": 240.0,
+      "attempts": [
+        {
+          "n": 1,
+          "verdict": "pass",
+          "tools": 4,
+          "s": 132.61,
+          "tokens": 20624,
+          "note": "",
+          "checks": [
+            {
+              "name": "tool-exists",
+              "ok": true,
+              "detail": "",
+              "evidence": "",
+              "reveal": "full",
+              "tier": "D"
+            },
+            {
+              "name": "fixture:f1",
+              "ok": true,
+              "detail": "output matches",
+              "evidence": "",
+              "reveal": "full",
+              "tier": "D"
+            },
+            {
+              "name": "fixture:f2",
+              "ok": true,
+              "detail": "output matches",
+              "evidence": "",
+              "reveal": "full",
+              "tier": "D"
+            },
+            {
+              "name": "fixture:f3",
+              "ok": true,
+              "detail": "output matches",
+              "evidence": "",
+              "reveal": "full",
+              "tier": "D"
+            },
+            {
+              "name": "fixture:f4",
+              "ok": true,
+              "detail": "output matches",
+              "evidence": "",
+              "reveal": "full",
+              "tier": "D"
+            },
+            {
+              "name": "all-fixtures",
+              "ok": true,
+              "detail": "all fixtures matched",
+              "evidence": "",
+              "reveal": "full",
+              "tier": "D"
+            }
+          ]
+        }
+      ],
+      "fingerprint": "68f104dbb8844e16",
+      "integrity_violation": false,
+      "tool_calls": 4,
+      "seconds": 132.61,
+      "tokens": 20624
+    },
+    {
+      "id": "s007-cli-spec",
+      "name": "The Coin Counter's Ledger",
+      "tier": 3,
+      "region": "the-foundry",
+      "cleared": true,
+      "attempts_used": 1,
+      "points": 240.0,
+      "attempts": [
+        {
+          "n": 1,
+          "verdict": "pass",
+          "tools": 6,
+          "s": 218.94,
+          "tokens": 27935,
+          "note": "",
+          "checks": [
+            {
+              "name": "tool-exists",
+              "ok": true,
+              "detail": "",
+              "evidence": "",
+              "reveal": "full",
+              "tier": "D"
+            },
+            {
+              "name": "balance-empty",
+              "ok": true,
+              "detail": "got 'balance: 0.00'",
+              "evidence": "",
+              "reveal": "full",
+              "tier": "D"
+            },
+            {
+              "name": "added-numbering",
+              "ok": true,
+              "detail": "got ['added #1', 'added #2', 'added #3']",
+              "evidence": "",
+              "reveal": "full",
+              "tier": "D"
+            },
+            {
+              "name": "balance-after",
+              "ok": true,
+              "detail": "got 'balance: 7.85'",
+              "evidence": "",
+              "reveal": "full",
+              "tier": "D"
+            },
+            {
+              "name": "exact-money",
+              "ok": true,
+              "detail": "got 'balance: 0.30'",
+              "evidence": "",
+              "reveal": "full",
+              "tier": "D"
+            },
+            {
+              "name": "report-by-month",
+              "ok": true,
+              "detail": "got '2026-10 80.00\\n2026-11 45.00'",
+              "evidence": "want '2026-10 80.00\\n2026-11 45.00'",
+              "reveal": "full",
+              "tier": "D"
+            },
+            {
+              "name": "report-by-note",
+              "ok": true,
+              "detail": "got 'salary 150.00\\n(none) -5.00\\nrent -20.00'",
+              "evidence": "want 'salary 150.00\\n(none) -5.00\\nrent -20.00'",
+              "reveal": "full",
+              "tier": "D"
+            },
+            {
+              "name": "ledger-shape",
+              "ok": true,
+              "detail": "entries carry amount/note/date",
+              "evidence": "[{\"amount\": \"100.00\", \"note\": \"salary\", \"date\": \"2026-10-01\"}, {\"amount\": \"-20.00\", \"note\": \"rent\", \"date\": \"2026-10-05\"}, {\"amount\": \"50.00\", \"note\": \"salary\", \"date\": \"2026-11-02\"}, {\"amount\": \"-5.00\", \"note\": null, \"date\": \"2026-11-03\"}]",
+              "reveal": "full",
+              "tier": "D"
+            },
+            {
+              "name": "error-handling",
+              "ok": true,
+              "detail": "all invalid inputs rejected with exit 2",
+              "evidence": "",
+              "reveal": "full",
+              "tier": "D"
+            },
+            {
+              "name": "corrupt-ledger",
+              "ok": true,
+              "detail": "exit=3 err='error: ledger unreadable'",
+              "evidence": "",
+              "reveal": "full",
+              "tier": "D"
+            }
+          ]
+        }
+      ],
+      "fingerprint": "77362c5dfef07a4c",
+      "integrity_violation": false,
+      "tool_calls": 6,
+      "seconds": 218.94,
+      "tokens": 27935
+    },
+    {
+      "id": "s008-pipeline-fix",
+      "name": "Three Tickets Before Friday",
+      "tier": 4,
+      "region": "labyrinth-of-debug",
+      "cleared": true,
+      "attempts_used": 1,
+      "points": 300.0,
+      "attempts": [
+        {
+          "n": 1,
+          "verdict": "pass",
+          "tools": 13,
+          "s": 133.77,
+          "tokens": 22138,
+          "note": "",
+          "checks": [
+            {
+              "name": "queue:imports",
+              "ok": true,
+              "detail": "",
+              "evidence": "",
+              "reveal": "full",
+              "tier": "D"
+            },
+            {
+              "name": "queue:priority-order",
+              "ok": true,
+              "detail": "got ['high', 'mid', 'low']",
+              "evidence": "",
+              "reveal": "full",
+              "tier": "D"
+            },
+            {
+              "name": "queue:fifo-within-priority",
+              "ok": true,
+              "detail": "got ['a', 'b', 'c', 'd']",
+              "evidence": "",
+              "reveal": "full",
+              "tier": "D"
+            },
+            {
+              "name": "queue:blocking-pop-waits",
+              "ok": true,
+              "detail": "got ['late']",
+              "evidence": "",
+              "reveal": "full",
+              "tier": "D"
+            },
+            {
+              "name": "queue:join-returns",
+              "ok": true,
+              "detail": "join() did not return within 5s",
+              "evidence": "",
+              "reveal": "full",
+              "tier": "D"
+            },
+            {
+              "name": "queue:join-waits-for-all",
+              "ok": true,
+              "detail": "join() returned with a task outstanding",
+              "evidence": "",
+              "reveal": "full",
+              "tier": "D"
+            },
+            {
+              "name": "queue:no-lost-or-duplicated-tasks",
+              "ok": true,
+              "detail": "4000 handed out, 4000 unique, expected 4000",
+              "evidence": "",
+              "reveal": "full",
+              "tier": "D"
+            },
+            {
+              "name": "worker:imports",
+              "ok": true,
+              "detail": "",
+              "evidence": "",
+              "reveal": "full",
+              "tier": "D"
+            },
+            {
+              "name": "worker:retry-eventually-succeeds",
+              "ok": true,
+              "detail": "returned 'ok'",
+              "evidence": "",
+              "reveal": "full",
+              "tier": "D"
+            },
+            {
+              "name": "worker:backoff-doubles",
+              "ok": true,
+              "detail": "sleeps were [0.1, 0.2]",
+              "evidence": "",
+              "reveal": "full",
+              "tier": "D"
+            },
+            {
+              "name": "worker:retry-reraises-last-error",
+              "ok": true,
+              "detail": "raised RuntimeError('always')",
+              "evidence": "",
+              "reveal": "full",
+              "tier": "D"
+            },
+            {
+              "name": "worker:single-attempt",
+              "ok": true,
+              "detail": "called 1 time(s)",
+              "evidence": "",
+              "reveal": "full",
+              "tier": "D"
+            },
+            {
+              "name": "worker:worker-collects-results",
+              "ok": true,
+              "detail": "results=[0, 10, 20, 40, 50]",
+              "evidence": "",
+              "reveal": "full",
+              "tier": "D"
+            },
+            {
+              "name": "worker:worker-records-errors",
+              "ok": true,
+              "detail": "errors=[ValueError('bad task')]",
+              "evidence": "",
+              "reveal": "full",
+              "tier": "D"
+            },
+            {
+              "name": "worker:worker-releases-join",
+              "ok": true,
+              "detail": "join() hung after every task was handled",
+              "evidence": "",
+              "reveal": "full",
+              "tier": "D"
+            },
+            {
+              "name": "report:imports",
+              "ok": true,
+              "detail": "",
+              "evidence": "",
+              "reveal": "full",
+              "tier": "D"
+            },
+            {
+              "name": "report:per-worker-average",
+              "ok": true,
+              "detail": "got {'__total__': 60, 'a': 20.0, 'b': 20.0}",
+              "evidence": "",
+              "reveal": "full",
+              "tier": "D"
+            },
+            {
+              "name": "report:total",
+              "ok": true,
+              "detail": "got 60",
+              "evidence": "",
+              "reveal": "full",
+              "tier": "D"
+            },
+            {
+              "name": "report:input-not-mutated",
+              "ok": true,
+              "detail": "caller's list became [{'worker': 'a', 'ms': 10}, {'worker': 'b', 'ms': 20}, {'worker': 'a', 'ms': 30}]",
+              "evidence": "",
+              "reveal": "full",
+              "tier": "D"
+            },
+            {
+              "name": "report:empty-input",
+              "ok": true,
+              "detail": "got {'__total__': 0}",
+              "evidence": "",
+              "reveal": "full",
+              "tier": "D"
+            }
+          ]
+        }
+      ],
+      "fingerprint": "8d33569059a16029",
+      "integrity_violation": false,
+      "tool_calls": 13,
+      "seconds": 133.77,
+      "tokens": 22138
+    },
+    {
+      "id": "s009-tests-that-test",
+      "name": "The Oath of the Testwright",
+      "tier": 5,
+      "region": "spire-of-systems",
+      "cleared": true,
+      "attempts_used": 1,
+      "points": 360.0,
+      "attempts": [
+        {
+          "n": 1,
+          "verdict": "pass",
+          "tools": 6,
+          "s": 237.63,
+          "tokens": 35045,
+          "note": "",
+          "checks": [
+            {
+              "name": "tests-run-green",
+              "ok": true,
+              "detail": "command succeeded",
+              "evidence": "",
+              "reveal": "full",
+              "tier": "A"
+            },
+            {
+              "name": "mutation-score",
+              "ok": true,
+              "detail": "killed 10/10 mutants (100%), need 75%",
+              "evidence": "",
+              "reveal": "full",
+              "tier": "F"
+            }
+          ]
+        }
+      ],
+      "fingerprint": "70ebc65a86742b58",
+      "integrity_violation": false,
+      "tool_calls": 6,
+      "seconds": 237.63,
+      "tokens": 35045
+    },
+    {
+      "id": "s010-codemod-migration",
+      "name": "The Long Migration",
+      "tier": 6,
+      "region": "the-summit",
+      "cleared": true,
+      "attempts_used": 1,
+      "points": 420.0,
+      "attempts": [
+        {
+          "n": 1,
+          "verdict": "pass",
+          "tools": 12,
+          "s": 192.94,
+          "tokens": 29716,
+          "note": "",
+          "checks": [
+            {
+              "name": "config:ini-removed",
+              "ok": true,
+              "detail": "settings.ini is gone",
+              "evidence": "",
+              "reveal": "full",
+              "tier": "D"
+            },
+            {
+              "name": "config:config-yaml",
+              "ok": true,
+              "detail": "config.yaml carries the migrated values",
+              "evidence": "",
+              "reveal": "full",
+              "tier": "D"
+            },
+            {
+              "name": "config:settings-api",
+              "ok": true,
+              "detail": "got {'broker_host': '10.0.0.4', 'broker_port': 5672, 'timeout_ms': 2500}",
+              "evidence": "want {'broker_host': '10.0.0.4', 'broker_port': 5672, 'timeout_ms': 2500}",
+              "reveal": "full",
+              "tier": "D"
+            },
+            {
+              "name": "behaviour:imports",
+              "ok": true,
+              "detail": "",
+              "evidence": "",
+              "reveal": "full",
+              "tier": "D"
+            },
+            {
+              "name": "behaviour:notify-publishes-event",
+              "ok": true,
+              "detail": "got Event(kind='user.notify', body={'user': 'u1', 'text': 'hello'}, key='u1', headers={})",
+              "evidence": "",
+              "reveal": "full",
+              "tier": "D"
+            },
+            {
+              "name": "behaviour:caller-owned-client-not-closed",
+              "ok": true,
+              "detail": "the passed-in client was closed by the function",
+              "evidence": "",
+              "reveal": "full",
+              "tier": "D"
+            },
+            {
+              "name": "behaviour:default-client-from-config",
+              "ok": true,
+              "detail": "",
+              "evidence": "",
+              "reveal": "full",
+              "tier": "D"
+            },
+            {
+              "name": "behaviour:charge-retries-then-succeeds",
+              "ok": true,
+              "detail": "attempts=3 event=Event(kind='billing.charge', body={'user': 'u9', 'cents': 1250}, key='u9', headers={})",
+              "evidence": "",
+              "reveal": "full",
+              "tier": "D"
+            },
+            {
+              "name": "behaviour:charge-propagates-error",
+              "ok": true,
+              "detail": "raised after 3 attempt(s), expected 3",
+              "evidence": "",
+              "reveal": "full",
+              "tier": "D"
+            },
+            {
+              "name": "behaviour:ingest-publishes-all",
+              "ok": true,
+              "detail": "returned 3 kinds=['ingest.record', 'ingest.record', 'ingest.record']",
+              "evidence": "",
+              "reveal": "full",
+              "tier": "D"
+            },
+            {
+              "name": "behaviour:ingest-propagates-error",
+              "ok": true,
+              "detail": "",
+              "evidence": "",
+              "reveal": "full",
+              "tier": "D"
+            },
+            {
+              "name": "behaviour:retry-returns-value",
+              "ok": true,
+              "detail": "",
+              "evidence": "",
+              "reveal": "full",
+              "tier": "D"
+            },
+            {
+              "name": "behaviour:retry-reraises",
+              "ok": true,
+              "detail": "called 3 times, expected 3",
+              "evidence": "",
+              "reveal": "full",
+              "tier": "D"
+            },
+            {
+              "name": "behaviour:client-reads-config",
+              "ok": true,
+              "detail": "config={'broker_host': '10.0.0.4', 'broker_port': 5672, 'timeout_ms': 2500, 'app_name': 'ledger', 'region': 'eu-west-1'}",
+              "evidence": "",
+              "reveal": "full",
+              "tier": "D"
+            },
+            {
+              "name": "behaviour:client-context-manager",
+              "ok": true,
+              "detail": "client not closed on exit",
+              "evidence": "",
+              "reveal": "full",
+              "tier": "D"
+            },
+            {
+              "name": "hygiene:no-legacy-imports",
+              "ok": true,
+              "detail": "nothing outside messenger/legacy.py references the v1 bus",
+              "evidence": "",
+              "reveal": "full",
+              "tier": "D"
+            },
+            {
+              "name": "hygiene:project-suite-green",
+              "ok": true,
+              "detail": "the rewritten test suite passes",
+              "evidence": "----------------------------------------------------------------------\nRan 22 tests in 0.010s\n\nOK\n",
+              "reveal": "full",
+              "tier": "D"
+            }
+          ]
+        }
+      ],
+      "fingerprint": "8bc9345945bb73e7",
+      "integrity_violation": false,
+      "tool_calls": 12,
+      "seconds": 192.94,
+      "tokens": 29716
+    }
+  ],
+  "final": {
+    "stageReached": 10,
+    "stoppedAt": "complete",
+    "points": 2340.0,
+    "firstTryRate": 1.0,
+    "feedbackUptake": 0.0,
+    "boardSize": 10,
+    "tool_calls": 62,
+    "seconds": 1054.33,
+    "tokens": 194347,
+    "attempts": 10
+  },
+  "timeline": [
+    {
+      "index": 1,
+      "stage": "s001-exact-edit",
+      "name": "The Ledger of Whispers",
+      "tier": 1,
+      "region": "plains-of-edit",
+      "cleared": true,
+      "attempts": 1,
+      "points": 120.0,
+      "cumulative": 120.0,
+      "seconds": 21.13,
+      "tool_calls": 5,
+      "attemptResults": [
+        "pass"
+      ]
+    },
+    {
+      "index": 2,
+      "stage": "s002-json-repair",
+      "name": "The Cracked Manifest",
+      "tier": 1,
+      "region": "plains-of-edit",
+      "cleared": true,
+      "attempts": 1,
+      "points": 120.0,
+      "cumulative": 240.0,
+      "seconds": 26.88,
+      "tool_calls": 4,
+      "attemptResults": [
+        "pass"
+      ]
+    },
+    {
+      "index": 3,
+      "stage": "s003-rename-symbol",
+      "name": "The Renaming of the Account",
+      "tier": 2,
+      "region": "caverns-of-search",
+      "cleared": true,
+      "attempts": 1,
+      "points": 180.0,
+      "cumulative": 420.0,
+      "seconds": 25.65,
+      "tool_calls": 4,
+      "attemptResults": [
+        "pass"
+      ]
+    },
+    {
+      "index": 4,
+      "stage": "s004-offbyone",
+      "name": "The Off-by-One Catacombs",
+      "tier": 2,
+      "region": "caverns-of-search",
+      "cleared": true,
+      "attempts": 1,
+      "points": 180.0,
+      "cumulative": 600.0,
+      "seconds": 39.3,
+      "tool_calls": 4,
+      "attemptResults": [
+        "pass"
+      ]
+    },
+    {
+      "index": 5,
+      "stage": "s005-log-search",
+      "name": "The Whispering Logs",
+      "tier": 2,
+      "region": "caverns-of-search",
+      "cleared": true,
+      "attempts": 1,
+      "points": 180.0,
+      "cumulative": 780.0,
+      "seconds": 25.48,
+      "tool_calls": 4,
+      "attemptResults": [
+        "pass"
+      ]
+    },
+    {
+      "index": 6,
+      "stage": "s006-sessionizer",
+      "name": "The Session Weaver",
+      "tier": 3,
+      "region": "the-foundry",
+      "cleared": true,
+      "attempts": 1,
+      "points": 240.0,
+      "cumulative": 1020.0,
+      "seconds": 132.61,
+      "tool_calls": 4,
+      "attemptResults": [
+        "pass"
+      ]
+    },
+    {
+      "index": 7,
+      "stage": "s007-cli-spec",
+      "name": "The Coin Counter's Ledger",
+      "tier": 3,
+      "region": "the-foundry",
+      "cleared": true,
+      "attempts": 1,
+      "points": 240.0,
+      "cumulative": 1260.0,
+      "seconds": 218.94,
+      "tool_calls": 6,
+      "attemptResults": [
+        "pass"
+      ]
+    },
+    {
+      "index": 8,
+      "stage": "s008-pipeline-fix",
+      "name": "Three Tickets Before Friday",
+      "tier": 4,
+      "region": "labyrinth-of-debug",
+      "cleared": true,
+      "attempts": 1,
+      "points": 300.0,
+      "cumulative": 1560.0,
+      "seconds": 133.77,
+      "tool_calls": 13,
+      "attemptResults": [
+        "pass"
+      ]
+    },
+    {
+      "index": 9,
+      "stage": "s009-tests-that-test",
+      "name": "The Oath of the Testwright",
+      "tier": 5,
+      "region": "spire-of-systems",
+      "cleared": true,
+      "attempts": 1,
+      "points": 360.0,
+      "cumulative": 1920.0,
+      "seconds": 237.63,
+      "tool_calls": 6,
+      "attemptResults": [
+        "pass"
+      ]
+    },
+    {
+      "index": 10,
+      "stage": "s010-codemod-migration",
+      "name": "The Long Migration",
+      "tier": 6,
+      "region": "the-summit",
+      "cleared": true,
+      "attempts": 1,
+      "points": 420.0,
+      "cumulative": 2340.0,
+      "seconds": 192.94,
+      "tool_calls": 12,
+      "attemptResults": [
+        "pass"
+      ]
+    }
+  ]
+}

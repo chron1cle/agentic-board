@@ -165,8 +165,8 @@ export default function App() {
               <dl>
                 <dt>Stage reached</dt>
                 <dd>{run.final.stageReached} / {run.final.boardSize}</dd>
-                <dt>Stopped at</dt>
-                <dd>{run.final.stoppedAt}</dd>
+                <dt>{run.final.stoppedAt === 'complete' ? 'Result' : 'Stopped at'}</dt>
+                <dd>{run.final.stoppedAt === 'complete' ? 'board complete' : run.final.stoppedAt}</dd>
                 <dt>First-try rate</dt>
                 <dd>{Math.round(run.final.firstTryRate * 100)}%</dd>
                 <dt>Feedback uptake</dt>

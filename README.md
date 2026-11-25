@@ -140,6 +140,48 @@ runs/index.json                        every run, for the results viewer
 the replay tape, and the board state are one file, so the renderer can never
 disagree with the scoreboard.
 
+### A published example
+
+One real run is committed: `runs/opencode-default/`, played by opencode v2.4.1 with
+its configured default model (`ms-s1/halogen`) on board v1, seed 1. Only `run.json`
+and `events.jsonl` are in git — scores and verdicts, no paths and no transcripts.
+
+```
+opencode / default (ms-s1/halogen)   board agentic-board v1   seed 1
+stage reached   10 / 10        first-try rate  100%
+points          2340.0         feedback uptake 0%
+tools           62             time            17m34s
+tokens          194,347
+```
+
+| # | Stage | Tier | Tools | Wall time |
+| --- | --- | --- | --- | --- |
+| 1 | `s001-exact-edit` | 1 | 5 | 21s |
+| 2 | `s002-json-repair` | 1 | 4 | 27s |
+| 3 | `s003-rename-symbol` | 2 | 4 | 26s |
+| 4 | `s004-offbyone` | 2 | 4 | 39s |
+| 5 | `s005-log-search` | 2 | 4 | 25s |
+| 6 | `s006-sessionizer` | 3 | 4 | 133s |
+| 7 | `s007-cli-spec` | 3 | 6 | 219s |
+| 8 | `s008-pipeline-fix` | 4 | 13 | 134s |
+| 9 | `s009-tests-that-test` | 5 | 6 | 238s |
+| 10 | `s010-codemod-migration` | 6 | 12 | 193s |
+
+Read that honestly, in both directions. A clean sweep on the first attempt of every
+stage says this model is **at or above the top of this board**: `s009` (write tests
+that kill injected mutants) and `s010` (migrate a codebase to a v2 SDK, verified by a
+hidden checker that includes deleted files) fell to four to twelve tool calls each.
+So `v1` will not separate this model from a slightly better one — it separates weak
+agents from competent ones, and its ceiling is now measured. The fix is more stages
+above tier 6, not softer oracles.
+
+Two numbers in that block are artifacts of a perfect run, not achievements. Feedback
+uptake is 0% because there was no failed attempt to learn from; the metric is only
+meaningful below 100% first-try. And the tool counts are low partly because a single
+turn of a strong agent does what a weaker one takes ten calls to stumble into.
+
+To see it: `python3 -m engine serve`, then open the Results tab and press Replay.
+
 ## The viewer
 
 Two surfaces, one app: the **3D board** (a stage is a node on an ascending spine,
@@ -206,11 +248,12 @@ SECURITY.md            secret-handling policy
 boards/v1.yaml         the ten-stage spine
 stages/                stage definitions: workspace, oracle, controls
 engine/                orchestrator, oracles, sandbox, harness adapters, CLI
-engine/harness/        one adapter per harness (opencode, fake)
+engine/harness/        one adapter per harness (opencode, fake, solve)
 board/                 react-three-fiber board + results viewer
 tests/                 engine unit tests
 tools/audit-secrets.py secret audit gate (pre-commit + CI)
 docs/                  design detail
+runs/opencode-default/ one published run, committed so the viewer has data
 ```
 
 ## Contributing

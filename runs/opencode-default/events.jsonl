@@ -1,0 +1,42 @@
+{"t": 1795571038.548, "event": "run.started", "harness": "opencode", "model": "default (ms-s1/halogen)", "board": "agentic-board", "stages": 10}
+{"t": 1795571038.549, "event": "stage.entered", "index": 1, "stage": "s001-exact-edit", "tier": 1, "name": "The Ledger of Whispers"}
+{"t": 1795571038.549, "event": "attempt.started", "stage": "s001-exact-edit", "attempt": 1}
+{"t": 1795571059.682, "event": "attempt.ended", "stage": "s001-exact-edit", "attempt": 1, "verdict": "pass", "tools": 5, "seconds": 21.13, "tokens": 10885, "failed": []}
+{"t": 1795571059.682, "event": "stage.cleared", "stage": "s001-exact-edit", "attempt": 1, "points": 120.0}
+{"t": 1795571059.683, "event": "stage.entered", "index": 2, "stage": "s002-json-repair", "tier": 1, "name": "The Cracked Manifest"}
+{"t": 1795571059.683, "event": "attempt.started", "stage": "s002-json-repair", "attempt": 1}
+{"t": 1795571086.567, "event": "attempt.ended", "stage": "s002-json-repair", "attempt": 1, "verdict": "pass", "tools": 4, "seconds": 26.88, "tokens": 11198, "failed": []}
+{"t": 1795571086.567, "event": "stage.cleared", "stage": "s002-json-repair", "attempt": 1, "points": 120.0}
+{"t": 1795571086.568, "event": "stage.entered", "index": 3, "stage": "s003-rename-symbol", "tier": 2, "name": "The Renaming of the Account"}
+{"t": 1795571086.569, "event": "attempt.started", "stage": "s003-rename-symbol", "attempt": 1}
+{"t": 1795571112.219, "event": "attempt.ended", "stage": "s003-rename-symbol", "attempt": 1, "verdict": "pass", "tools": 4, "seconds": 25.65, "tokens": 11081, "failed": []}
+{"t": 1795571112.219, "event": "stage.cleared", "stage": "s003-rename-symbol", "attempt": 1, "points": 180.0}
+{"t": 1795571112.22, "event": "stage.entered", "index": 4, "stage": "s004-offbyone", "tier": 2, "name": "The Off-by-One Catacombs"}
+{"t": 1795571112.22, "event": "attempt.started", "stage": "s004-offbyone", "attempt": 1}
+{"t": 1795571151.519, "event": "attempt.ended", "stage": "s004-offbyone", "attempt": 1, "verdict": "pass", "tools": 4, "seconds": 39.3, "tokens": 12776, "failed": []}
+{"t": 1795571151.519, "event": "stage.cleared", "stage": "s004-offbyone", "attempt": 1, "points": 180.0}
+{"t": 1795571151.519, "event": "stage.entered", "index": 5, "stage": "s005-log-search", "tier": 2, "name": "The Whispering Logs"}
+{"t": 1795571151.522, "event": "attempt.started", "stage": "s005-log-search", "attempt": 1}
+{"t": 1795571177.001, "event": "attempt.ended", "stage": "s005-log-search", "attempt": 1, "verdict": "pass", "tools": 4, "seconds": 25.48, "tokens": 12949, "failed": []}
+{"t": 1795571177.001, "event": "stage.cleared", "stage": "s005-log-search", "attempt": 1, "points": 180.0}
+{"t": 1795571177.002, "event": "stage.entered", "index": 6, "stage": "s006-sessionizer", "tier": 3, "name": "The Session Weaver"}
+{"t": 1795571177.002, "event": "attempt.started", "stage": "s006-sessionizer", "attempt": 1}
+{"t": 1795571309.616, "event": "attempt.ended", "stage": "s006-sessionizer", "attempt": 1, "verdict": "pass", "tools": 4, "seconds": 132.61, "tokens": 20624, "failed": []}
+{"t": 1795571309.616, "event": "stage.cleared", "stage": "s006-sessionizer", "attempt": 1, "points": 240.0}
+{"t": 1795571309.617, "event": "stage.entered", "index": 7, "stage": "s007-cli-spec", "tier": 3, "name": "The Coin Counter's Ledger"}
+{"t": 1795571309.617, "event": "attempt.started", "stage": "s007-cli-spec", "attempt": 1}
+{"t": 1795571528.556, "event": "attempt.ended", "stage": "s007-cli-spec", "attempt": 1, "verdict": "pass", "tools": 6, "seconds": 218.94, "tokens": 27935, "failed": []}
+{"t": 1795571528.556, "event": "stage.cleared", "stage": "s007-cli-spec", "attempt": 1, "points": 240.0}
+{"t": 1795571528.556, "event": "stage.entered", "index": 8, "stage": "s008-pipeline-fix", "tier": 4, "name": "Three Tickets Before Friday"}
+{"t": 1795571528.558, "event": "attempt.started", "stage": "s008-pipeline-fix", "attempt": 1}
+{"t": 1795571662.333, "event": "attempt.ended", "stage": "s008-pipeline-fix", "attempt": 1, "verdict": "pass", "tools": 13, "seconds": 133.77, "tokens": 22138, "failed": []}
+{"t": 1795571662.333, "event": "stage.cleared", "stage": "s008-pipeline-fix", "attempt": 1, "points": 300.0}
+{"t": 1795571662.333, "event": "stage.entered", "index": 9, "stage": "s009-tests-that-test", "tier": 5, "name": "The Oath of the Testwright"}
+{"t": 1795571662.334, "event": "attempt.started", "stage": "s009-tests-that-test", "attempt": 1}
+{"t": 1795571899.962, "event": "attempt.ended", "stage": "s009-tests-that-test", "attempt": 1, "verdict": "pass", "tools": 6, "seconds": 237.63, "tokens": 35045, "failed": []}
+{"t": 1795571899.962, "event": "stage.cleared", "stage": "s009-tests-that-test", "attempt": 1, "points": 360.0}
+{"t": 1795571899.962, "event": "stage.entered", "index": 10, "stage": "s010-codemod-migration", "tier": 6, "name": "The Long Migration"}
+{"t": 1795571899.964, "event": "attempt.started", "stage": "s010-codemod-migration", "attempt": 1}
+{"t": 1795572092.902, "event": "attempt.ended", "stage": "s010-codemod-migration", "attempt": 1, "verdict": "pass", "tools": 12, "seconds": 192.94, "tokens": 29716, "failed": []}
+{"t": 1795572092.902, "event": "stage.cleared", "stage": "s010-codemod-migration", "attempt": 1, "points": 420.0}
+{"t": 1795572092.902, "event": "run.ended", "stageReached": 10, "points": 2340.0, "stoppedAt": "complete"}

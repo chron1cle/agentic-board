@@ -30,7 +30,14 @@ token.json
 *.tfstate.backup
 
 # --- run artifacts / generated output ---
-runs/
+# One run is published so a fresh clone has something real to look at in the
+# viewer (see "A published example" in README.md). Only its two record files:
+# the per-attempt workspaces stay out. `engine serve` rebuilds index.json.
+/runs/*
+!/runs/opencode-default/
+/runs/opencode-default/*
+!/runs/opencode-default/run.json
+!/runs/opencode-default/events.jsonl
 out/
 dist/
 build/

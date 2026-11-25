@@ -477,3 +477,11 @@ Ship 1–3 before touching WebGL. The verifier's credibility is the whole produc
 Secrets never enter this repo. `tools/audit-secrets.py` is the in-repo gate, run by a
 pre-commit hook (`tools/install-hooks.sh`) and by CI on every push including full
 history. See [SECURITY.md](SECURITY.md).
+
+**DECIDED — run records are public, workspaces are not.** One run is committed
+(`runs/opencode-default/`: `run.json` and `events.jsonl`) so a fresh clone has real
+data to look at in the viewer. Those two files carry scores, timings, tool counts and
+verdicts and nothing else — no filesystem paths, no transcripts, no agent output. The
+per-attempt workspaces under `runs/<id>/<stage>/attempt<N>/` stay ignored: they are
+large, they are where an agent's own text would land, and a reader who wants to audit a
+verdict can reproduce it with `python3 -m engine run`.
