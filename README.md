@@ -164,10 +164,15 @@ separately from its verdict. Integrity violations and checker errors keep their
 own verdicts. Runtime limits on the submitted program inside a level's tests
 remain part of that level's requirements.
 
-The OpenCode connector starts a private server for each attempt and stops its
-process group at the deadline. Legacy OpenCode sessions could keep editing
-after their CLI timed out. Their historical scores use their original rules
-and appear in separate comparison groups.
+External harnesses run with a fresh home and disposable session storage for
+each attempt. A supervisor stops the worker process group at exit, timeout,
+or loss of the engine, and on Linux also reaps detached descendants. OpenCode
+uses a private server and an in-memory database. Kilo uses its embedded
+runtime, and Cline runs locally. Provider credentials can come from the
+environment or supported configuration files.
+
+Legacy OpenCode sessions could keep editing after their CLI timed out. Their
+historical scores use their original rules and appear in separate comparison groups.
 
 Use the same harness for initial model comparisons. Record local hardware and
 use a clock budget that gives the selected local configuration time to generate.
@@ -237,11 +242,12 @@ python3 -m engine run --harness codex --limit 1
 python3 -m engine run --harness kilo --model provider/model --limit 1
 ```
 
-T3 Code uses the [t3code-threads client](https://github.com/kcosr/t3code-threads).
-Configure it to reach a T3 server running on the benchmark host with access to
-the attempt directories. It creates a new thread per attempt and uses T3's
-automatic edit-approval mode. Its completion output lacks tool and token
-counts, so full T3 runs are replayable and excluded from ranked results.
+T3 Code requires both the local `t3` server executable and the
+[t3code-threads client](https://github.com/kcosr/t3code-threads). The engine
+starts a private loopback server with a fresh database, issues a token for that
+server, and submits one thread in automatic edit-approval mode. The server
+and its provider workers share the attempt's lifetime. The client omits tool
+and token counts, so T3 runs are replayable and excluded from ranked results.
 
 Hermes uses its one-shot JSON stream and local file and terminal toolsets.
 Configure the Hermes profile's terminal cwd as `.` so it starts in the
@@ -256,7 +262,9 @@ Use `--harness command --harness-bin /path/to/wrapper` for another local agent,
 an SDK, or an ACP client that can run a single turn. The wrapper runs in the
 attempt workspace and receives one JSON object on stdin with `prompt`,
 `model`, `stage_id`, `attempt`, and `timeout_s`. The wrapper owns provider
-authentication and must stop its agent before it exits.
+authentication. It must run its agent locally or use a provider that cancels
+work on disconnect. An independently queued remote job can continue billing
+after its local client exits.
 
 On stdout, emit one JSON object per line. Emit one `tool.call` for each
 executed call, with an optional unique `id`, and finish with one `result`

@@ -15,6 +15,7 @@ from pathlib import Path
 
 from .base import HarnessAdapter, HarnessRequest, HarnessResult
 from .process import execute
+from .profile import attempt_environment
 
 CONFIG_CANDIDATES = (
     "~/.config/opencode/opencode.jsonc",
@@ -56,7 +57,10 @@ class OpenCodeAdapter(HarnessAdapter):
             cmd += ["--model", model]
         cmd.append(request.prompt)
 
-        process = execute(cmd, request.workspace, request.timeout_s)
+        # A private server still shares the interactive session database by default.
+        # Keep sessions in memory and discard the server's files after the attempt.
+        with attempt_environment(self.name) as (env, profile):
+            process = execute(cmd, request.workspace, request.timeout_s, env=env, profile=profile)
         result = parse_opencode_stream(process.raw, process.exit_code, process.seconds, process.error)
         if process.timed_out:
             result.timed_out = True

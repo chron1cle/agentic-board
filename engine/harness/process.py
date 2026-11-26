@@ -5,47 +5,45 @@ from __future__ import annotations
 import json
 import os
 import shutil
-import signal
 import subprocess
+import sys
 import time
 from pathlib import Path
 
 from .base import HarnessAdapter, HarnessRequest, HarnessResult, elapsed
+from .profile import attempt_environment
 
 
-def execute(argv, workspace, timeout, *, stdin=None, env=None):
+def execute(argv, workspace, timeout, *, stdin=None, env=None, profile=None):
     started = time.monotonic()
     try:
-        with subprocess.Popen(
-            argv, cwd=workspace, env=env, start_new_session=True,
-            stdin=subprocess.PIPE if stdin is not None else subprocess.DEVNULL,
-            stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-            text=True, encoding="utf-8", errors="replace",
-        ) as process:
-            timed_out = False
-            try:
-                stdout, stderr = process.communicate(stdin, timeout=timeout)
-            except subprocess.TimeoutExpired:
-                timed_out = True
-                stop_group(process.pid)
-                stdout, stderr = process.communicate()
-            finally:
-                stop_group(process.pid)
-            return HarnessResult(
-                exit_code=124 if timed_out else process.returncode,
-                seconds=elapsed(started), raw=stdout, timed_out=timed_out, tokens_reported=False,
-                error=stderr.strip()[:500] if process.returncode else "",
-            )
+        read_fd, write_fd = os.pipe()
+        with os.fdopen(read_fd, "rb") as reader, os.fdopen(write_fd, "wb") as lifeline:
+            guard = Path(__file__).with_name("_guard.py")
+            with subprocess.Popen(
+                [sys.executable, "-IS", str(guard), str(reader.fileno()), str(profile or ""), *argv],
+                cwd=workspace, env=env, start_new_session=True, pass_fds=(reader.fileno(),),
+                stdin=subprocess.PIPE if stdin is not None else subprocess.DEVNULL,
+                stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                text=True, encoding="utf-8", errors="replace",
+            ) as process:
+                timed_out = False
+                try:
+                    stdout, stderr = process.communicate(stdin, timeout=timeout)
+                except subprocess.TimeoutExpired:
+                    timed_out = True
+                    lifeline.close()
+                    stdout, stderr = process.communicate()
+                finally:
+                    lifeline.close()
+                return HarnessResult(
+                    exit_code=124 if timed_out else process.returncode,
+                    seconds=elapsed(started), raw=stdout, timed_out=timed_out, tokens_reported=False,
+                    error=stderr.strip()[:500] if process.returncode else "",
+                )
     except OSError as exc:
         return HarnessResult(exit_code=127, seconds=elapsed(started),
                              error=f"could not start harness: {exc}")
-
-
-def stop_group(pid):
-    try:
-        os.killpg(pid, signal.SIGKILL)
-    except ProcessLookupError:
-        pass
 
 
 def object_value(value):
@@ -112,15 +110,16 @@ class ProcessAdapter(HarnessAdapter):
     def label(self):
         return self.model or "configured default"
 
-    def invocation(self, request, model):
+    def invocation(self, request, model, env):
         raise NotImplementedError
 
     def run(self, request: HarnessRequest):
         binary = self.binary()
         if not binary:
             return HarnessResult(exit_code=127, error=self.available()[1])
-        args, stdin, env = self.invocation(request, request.model or self.model)
-        result = execute([binary, *args], request.workspace, request.timeout_s, stdin=stdin, env=env)
+        with attempt_environment(self.name) as (env, profile):
+            args, stdin = self.invocation(request, request.model or self.model, env)
+            result = execute([binary, *args], request.workspace, request.timeout_s, stdin=stdin, env=env, profile=profile)
         if result.raw or result.ok:
             self.read(result)
         return result

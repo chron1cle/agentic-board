@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import os
 
 from .base import HarnessResult
 from .opencode import parse_opencode_stream
@@ -35,10 +34,10 @@ class CodexAdapter(ProcessAdapter):
     name = "codex"
     executables = ("codex",)
 
-    def invocation(self, request, model):
+    def invocation(self, request, model, env):
         return (["exec", "--json", "--ephemeral", "--skip-git-repo-check",
                  "--sandbox", "workspace-write", "-c", 'approval_policy="never"',
-                 *model_args(model), "-"], request.prompt, None)
+                 *model_args(model), "-"], request.prompt)
 
     def read(self, result):
         tools = ToolEvents(result)
@@ -65,8 +64,8 @@ class KiloAdapter(ProcessAdapter):
     name = "kilo"
     executables = ("kilo",)
 
-    def invocation(self, request, model):
-        return ["run", "--auto", "--format", "json", *model_args(model)], request.prompt, None
+    def invocation(self, request, model, env):
+        return ["run", "--auto", "--format", "json", *model_args(model)], request.prompt
 
     def read(self, result):
         parsed = parse_opencode_stream(result.raw, result.exit_code, result.seconds)
@@ -87,11 +86,10 @@ class ClineAdapter(ProcessAdapter):
     name = "cline"
     executables = ("cline",)
 
-    def invocation(self, request, model):
+    def invocation(self, request, model, env):
         provider, sep, identifier = model.partition("/") if model else ("", "", "")
         selection = ["--provider", provider, "--model", identifier] if sep else model_args(model)
-        return (["--json", "--auto-approve", "true", *selection, request.prompt], None,
-                {**os.environ, "CLINE_SESSION_BACKEND_MODE": "local"})
+        return (["--data-dir", env["CLINE_DATA_DIR"], "--json", "--auto-approve", "true", *selection, request.prompt], None)
 
     def read(self, result):
         done = False
@@ -129,9 +127,10 @@ class GrokBuildAdapter(ProcessAdapter):
     name = "grokbuild"
     executables = ("grok",)
 
-    def invocation(self, request, model):
-        return (["--output-format", "streaming-json", "--always-approve", "--no-memory",
-                 "--disable-web-search", *model_args(model), "--single", request.prompt], None, None)
+    def invocation(self, request, model, env):
+        return (["--leader-socket", env["GROK_LEADER_SOCKET"], "--output-format", "streaming-json",
+                 "--always-approve", "--no-memory",
+                 "--disable-web-search", *model_args(model), "--single", request.prompt], None)
 
     def read(self, result):
         tools = ToolEvents(result)
@@ -159,9 +158,10 @@ class AntigravityAdapter(ProcessAdapter):
     name = "antigravity"
     executables = ("agy", "antigravity")
 
-    def invocation(self, request, model):
+    def invocation(self, request, model, env):
         return (["--output-format", "stream-json", "--mode", "auto", "--sandbox",
-                 "--disable-slash-commands", *model_args(model), "--print", request.prompt], None, None)
+                 "--remote-agent=false", "--remote-control=false", "--print-timeout", f"{request.timeout_s}s",
+                 "--disable-slash-commands", *model_args(model), "--print", request.prompt], None)
 
     def read(self, result):
         tools = ToolEvents(result)
@@ -183,8 +183,8 @@ class PiAdapter(ProcessAdapter):
     name = "pi"
     executables = ("pi",)
 
-    def invocation(self, request, model):
-        return ["--mode", "json", "--no-session", *model_args(model), request.prompt], None, None
+    def invocation(self, request, model, env):
+        return ["--mode", "json", "--no-session", *model_args(model), request.prompt], None
 
     def read(self, result):
         tools = ToolEvents(result)
@@ -213,10 +213,10 @@ class HermesAdapter(ProcessAdapter):
     name = "hermes"
     executables = ("hermes",)
 
-    def invocation(self, request, model):
+    def invocation(self, request, model, env):
+        env.update(TERMINAL_ENV="local", TERMINAL_CWD=str(request.workspace.resolve()))
         return (["chat", "--oneshot", "--format", "stream-json", "--toolsets", "terminal,file",
-                 *model_args(model), "--query", request.prompt], None,
-                {**os.environ, "TERMINAL_ENV": "local", "TERMINAL_CWD": str(request.workspace.resolve())})
+                 *model_args(model), "--query", request.prompt], None)
 
     def read(self, result):
         tools = ToolEvents(result)
@@ -241,11 +241,11 @@ class CommandAdapter(ProcessAdapter):
             return False, "command requires --harness-bin PATH"
         return super().available()
 
-    def invocation(self, request, model):
+    def invocation(self, request, model, env):
         return [], json.dumps({
             "prompt": request.prompt, "model": model, "stage_id": request.stage_id,
             "attempt": request.attempt, "timeout_s": request.timeout_s,
-        }) + "\n", None
+        }) + "\n"
 
     def read(self, result):
         final = None

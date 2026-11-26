@@ -187,16 +187,16 @@ ROUTING_RULES = {
 }
 
 CONNECTORS = {
-    "opencode": ("OpenCode", "opencode", "Start a private OpenCode server for each attempt. Read tool events and per-step token usage, and stop its workers at the stage deadline.", "Sign in or configure a provider in OpenCode. Model format: provider/model."),
-    "cline": ("Cline", "cline", "Start a local one-shot JSONL session. Read tool events and cumulative usage where emitted.", "Authenticate in Cline. Use provider/model or a model ID on Cline's default provider."),
-    "kilo": ("Kilo Code", "kilo", "Pipe the prompt into an autonomous run. Read tool and step events from JSONL.", "Configure a Kilo provider and its autonomous permissions. Model format: provider/model."),
+    "opencode": ("OpenCode", "opencode", "Run each attempt with a private server and an in-memory session database. Read tool events and per-step token usage, and stop workers at the stage deadline.", "Configure the provider in OpenCode's config or environment. Model format: provider/model."),
+    "cline": ("Cline", "cline", "Start a local one-shot JSONL session with a private data directory. Read tool events and cumulative usage where emitted.", "Authenticate in Cline. Use provider/model or a model ID on Cline's default provider."),
+    "kilo": ("Kilo Code", "kilo", "Run the prompt in a private local runtime with the shared daemon disabled. Read tool and step events from JSONL.", "Configure a Kilo provider and its autonomous permissions. Model format: provider/model."),
     "codex": ("Codex CLI", "codex", "Run an ephemeral codex exec session with workspace-write access. Read JSONL tool items and turn usage.", "Authenticate in Codex. Pass a Codex model ID or use its configured default."),
     "grokbuild": ("Grok Build", "grok", "Run a single prompt with cross-session memory disabled. Read streaming tool events and usage.", "Authenticate in Grok Build. Pass a Grok Build model ID or use its configured default."),
     "antigravity": ("Antigravity CLI", "agy or antigravity", "Run print mode with the CLI sandbox enabled. Count distinct tool steps and read terminal usage.", "Authenticate in the Antigravity CLI. Pass an Antigravity model ID or use its configured default."),
-    "t3code": ("T3 Code", "t3code-threads", "Create a fresh thread, send the prompt, and stop the provider session. Runs are replayable and unranked because the client omits tool counts.", "Connect t3code-threads to a T3 server with access to the same workspace. Use instance/model or the configured T3 provider."),
+    "t3code": ("T3 Code", "t3code-threads", "Run a fresh thread on a disposable loopback server and stop its workers. Runs are replayable and unranked because the client omits tool counts.", "Install t3 and t3code-threads locally. Each attempt starts its own server. Use instance/model or the default provider."),
     "hermes": ("Hermes", "hermes", "Start a one-shot JSONL chat with the local file and terminal toolsets.", "Configure a provider and set terminal.cwd to . in the Hermes profile. Use a model ID for that provider."),
     "pi": ("Pi", "pi", "Launch JSON mode with session persistence disabled. Read tool execution events and assistant-message usage.", "Configure a Pi provider. Model format: provider/model."),
-    "command": ("Custom command", "Operator-supplied executable", "Read the request from stdin and emit tool calls and one terminal JSONL result to stdout.", "Pass --harness-bin PATH. The wrapper handles authentication and agent shutdown."),
+    "command": ("Custom command", "Operator-supplied executable", "Read the request from stdin and emit tool calls and one terminal JSONL result to stdout.", "Pass --harness-bin PATH. The wrapper owns authentication and must cancel any external work on disconnect."),
     "fake": ("Fake control", "Built into the engine", "Run scripted behavior used to test the benchmark plumbing.", "No provider account or external executable required."),
     "solve": ("Solve control", "Built into the engine", "Install each stage's known-good control fixture to verify the full playthrough.", "No provider account or external executable required."),
 }

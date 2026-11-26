@@ -2,12 +2,14 @@
 
 import fcntl
 import json
+import os
 import shutil
 import tempfile
 import textwrap
 import time
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 from engine.harness.base import HarnessRequest
 from engine.harness.fake import FakeHarness
@@ -131,11 +133,18 @@ class OpenCodeDeadlineTest(unittest.TestCase):
             binary.write_text(textwrap.dedent("""\
                 #!/usr/bin/env python3
                 import json
+                import os
                 import subprocess
                 import sys
                 import time
                 from pathlib import Path
                 assert "--standalone" in sys.argv
+                assert os.environ["OPENCODE_DB"] == ":memory:"
+                paths = [Path(os.environ[key]) for key in ("XDG_DATA_HOME", "XDG_STATE_HOME")]
+                for path in paths:
+                    path.mkdir(parents=True, exist_ok=True)
+                    (path / "session").touch()
+                Path("storage.json").write_text(json.dumps([str(p) for p in paths]))
                 subprocess.Popen([sys.executable, "worker.py"])
                 while not Path("ready").exists():
                     time.sleep(0.01)
@@ -145,9 +154,15 @@ class OpenCodeDeadlineTest(unittest.TestCase):
             binary.chmod(0o755)
             request = request_for(root)
             request.timeout_s = 1
-            result = OpenCodeAdapter(bin_path=str(binary)).run(request)
+            with patch.dict(os.environ, OPENCODE_DB=str(root / "personal.db"),
+                            XDG_DATA_HOME=str(root / "data"), XDG_STATE_HOME=str(root / "state")):
+                result = OpenCodeAdapter(bin_path=str(binary)).run(request)
             self.assertTrue(result.timed_out)
             self.assertEqual((result.exit_code, result.tokens), (124, 7))
+            for location in json.loads((root / "storage.json").read_text()):
+                self.assertFalse(Path(location).exists())
+            self.assertFalse((root / "data").exists())
+            self.assertFalse((root / "state").exists())
             with (root / "lease").open() as lease:
                 deadline = time.monotonic() + 1
                 while True:
