@@ -1,0 +1,15 @@
+id: s036-versioned-wiring
+name: The Branching Loom
+tier: 6
+region: world-three
+capabilities: [versioned-data, dynamic-connectivity, offline-queries]
+brief_file: brief.md
+attempts: 3
+seedable: true
+timeout_s: 840
+tool_budget: 75
+oracles:
+  - kind: differential
+    entry: checker.py
+    timeout_s: 40
+    reveal: full

@@ -3,7 +3,7 @@ import { Canvas } from '@react-three/fiber'
 import { loadCatalog, loadIndex, loadRun } from './api.js'
 import {
   levelLabel, regionOf, replayActivity, replayActivityRows, replayFrame, replayProgress,
-  replaySchedule, replaySeconds, resolvedIndex, scoreAt, worldLocation, worldSelection,
+  replaySchedule, replaySeconds, resolvedIndex, scoreAt, stageVerdict, worldLocation, worldSelection,
 } from './layout.js'
 import Scene from './Scene.jsx'
 import Results from './Results.jsx'
@@ -170,10 +170,12 @@ export default function App() {
   const current = frame.row
   const location = current && worldLocation(current, worldScores)
   const theme = worldTheme(location?.world)
+  const outcome = stageVerdict(current)
+  const stoppedLabel = outcome === 'incomplete' ? 'Incomplete · stage clock expired' : 'Run stopped'
   const verdict = frame.resolved
-    ? current?.cleared ? `Cleared on attempt ${current.attempts}` : 'Run stopped'
+    ? current?.cleared ? `Cleared on attempt ${current.attempts}${current.timedOut ? ' · verified at deadline' : ''}` : stoppedLabel
     : frame.arrived ? 'Attempts in progress' : 'Approaching stage'
-  const icon = { pass: '✓', fail: '×', budget_exhausted: '◷', integrity_violation: '!', infrastructure_error: '!' }
+  const icon = { pass: '✓', fail: '×', budget_exhausted: '◷', incomplete: '◷', integrity_violation: '!', infrastructure_error: '!' }
 
   return (
     <div className="app">
@@ -257,7 +259,7 @@ export default function App() {
                 <div className="now">
                   <b>{levelLabel(current, worldScores)} · {current.name}</b>
                   <span className="region">{regionOf(current.region).label}</span>
-                  <span className={`verdict ${frame.resolved ? (current.cleared ? 'pass' : 'fail') : 'pending'}`}>
+                  <span className={`verdict ${frame.resolved ? outcome : 'pending'}`}>
                     {verdict}
                   </span>
                   {frame.arrived && (
@@ -303,7 +305,7 @@ export default function App() {
                 {timeline.map((row, i) => (
                   <li key={row.stage}>
                     <button
-                      className={`stage-link ${i === frame.index ? 'focus' : ''} ${resolved >= i ? (row.cleared ? 'pass' : 'fail') : ''}`}
+                      className={`stage-link ${i === frame.index ? 'focus' : ''} ${resolved >= i ? stageVerdict(row) : ''}`}
                       onClick={() => selectStage(i)}
                       aria-current={i === frame.index ? 'step' : undefined}
                     >

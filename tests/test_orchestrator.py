@@ -13,7 +13,7 @@ import time
 import unittest
 from pathlib import Path
 
-from engine.feedback import (VERDICT_BUDGET, VERDICT_ERROR, VERDICT_FAIL,
+from engine.feedback import (VERDICT_INCOMPLETE, VERDICT_ERROR, VERDICT_FAIL,
                              VERDICT_INTEGRITY, VERDICT_PASS)
 from engine.harness.base import HarnessRequest
 from engine.harness.fake import FakeHarness
@@ -259,7 +259,64 @@ class StageClockTest(unittest.TestCase):
 
         self.assertEqual(probe.timeouts, [], "a stage out of clock must not run")
         self.assertEqual([a.verdict for a in record.stages[0].attempts],
-                         [VERDICT_BUDGET])
+                         [VERDICT_INCOMPLETE])
+
+
+class DeadlineGradingTest(unittest.TestCase):
+    def test_verified_retry_at_deadline_unlocks_the_next_stage(self):
+        class LateSolve(SolveHarness):
+            def run(self, request):
+                if request.stage_id == "s001-exact-edit" and request.attempt == 1:
+                    return FakeHarness().run(request)
+                result = super().run(request)
+                result.timed_out = request.stage_id == "s001-exact-edit"
+                return result
+
+        with tempfile.TemporaryDirectory() as tmp:
+            config = RunConfig(load_board(BOARDS / "v4.yaml"), limit=2, out_dir=Path(tmp))
+            record = Orchestrator(config, LateSolve()).run()
+        self.assertEqual([s.points for s in record.stages], [75, 120])
+        self.assertEqual(record.feedback_uptake, 1)
+        self.assertEqual(record.first_try_rate, 0.5)
+        self.assertEqual(record.totals["attempts"], 3)
+
+    def test_timeout_preserves_integrity_and_checker_errors(self):
+        class Interrupted(FakeHarness):
+            def run(self, request):
+                result = super().run(request)
+                result.timed_out = True
+                return result
+
+        def touch_protected(request):
+            (request.workspace / "logs" / "app.log").write_text("changed")
+
+        for manifest, expected in [("integrity.yaml", VERDICT_INTEGRITY), ("smoke.yaml", VERDICT_ERROR)]:
+            with self.subTest(manifest=manifest), tempfile.TemporaryDirectory() as tmp:
+                board = load_board(BOARDS / manifest)
+                if expected == VERDICT_ERROR:
+                    board.stages[0].oracles[0].config["expect"] = "missing-fixture"
+                adapter = Interrupted({"s005-log-search": touch_protected})
+                record = Orchestrator(RunConfig(board, out_dir=Path(tmp)), adapter).run()
+                self.assertEqual(record.status, expected)
+                self.assertEqual(record.points, 0)
+
+    def test_incomplete_world_has_no_score_or_failure_event(self):
+        class Interrupted(FakeHarness):
+            def run(self, request):
+                result = super().run(request)
+                result.timed_out = True
+                return result
+
+        with tempfile.TemporaryDirectory() as tmp:
+            config = RunConfig(load_board(BOARDS / "v4.yaml"), out_dir=Path(tmp))
+            events = []
+            record = Orchestrator(config, Interrupted(), on_event=events.append).run()
+        self.assertEqual(record.status, VERDICT_INCOMPLETE)
+        self.assertEqual([s["score"] for s in record.score_segments], [None] * 3)
+        self.assertEqual([s["status"] for s in record.score_segments], ["incomplete", "unplayed", "unplayed"])
+        self.assertEqual(record.totals["attempts"], 1)
+        self.assertIn("stage.incomplete", [e["event"] for e in events])
+        self.assertNotIn("stage.failed", [e["event"] for e in events])
 
 
 class ReferenceRunTest(unittest.TestCase):

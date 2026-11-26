@@ -9,6 +9,7 @@ export const REGIONS = {
   'the-foundry': { label: 'The Foundry', color: '#d98b4a', look: 'forges and sparks' },
   'labyrinth-of-debug': { label: 'Labyrinth of Debug', color: '#a35d6e', look: 'broken machinery' },
   'spire-of-systems': { label: 'Spire of Systems', color: '#6fa8a1', look: 'interlocking gears' },
+  'world-three': { label: 'The Deep Works', color: '#ffc171', look: 'amber terraces' },
   'the-summit': { label: 'The Summit', color: '#b9a7d6', look: 'storm and a single beacon' },
 }
 
@@ -24,16 +25,22 @@ export function layout(timeline, worlds = []) {
     const location = worldLocation(row, worlds)
     const theme = worldTheme(location?.world)
     const level = (location?.level ?? row.index ?? i + 1) - 1
-    const { x, z, angle } = theme.path(level)
+    const { x, z, angle, height = 0 } = theme.path(level)
     const lift = theme.lift ?? ((row.index ?? i + 1) - 1 - level) * theme.rise
     return {
       ...row,
       world: location?.world,
+      level: location?.level,
       index0: i,
-      position: [x, lift + level * theme.rise, z],
+      position: [x, lift + level * theme.rise + height, z],
       angle,
     }
   })
+}
+
+export function stageVerdict(row) {
+  if (row?.cleared) return 'pass'
+  return row?.status === 'incomplete' ? 'incomplete' : 'fail'
 }
 
 export const ARRIVAL = 0.27

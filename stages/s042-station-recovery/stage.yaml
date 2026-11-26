@@ -1,0 +1,23 @@
+id: s042-station-recovery
+name: The Commissioning Station
+tier: 6
+region: world-three
+capabilities: [systems-integration, versioned-data, adaptive-testing, sensor-calibration]
+brief_file: brief.md
+attempts: 3
+seedable: true
+timeout_s: 1200
+tool_budget: 100
+oracles:
+  - kind: differential
+    entry: network_test.py
+    timeout_s: 40
+    reveal: full
+  - kind: differential
+    entry: probe_test.py
+    timeout_s: 40
+    reveal: full
+  - kind: differential
+    entry: checker.py
+    timeout_s: 40
+    reveal: full

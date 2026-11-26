@@ -1,0 +1,19 @@
+id: s032-batch-migration
+name: The Transfer Press
+tier: 6
+region: world-three
+capabilities: [atomic-migration, simultaneous-renames, recovery]
+brief_file: brief.md
+attempts: 3
+seedable: true
+timeout_s: 720
+tool_budget: 60
+oracles:
+  - kind: script
+    entry: checker.py
+    timeout_s: 35
+    reveal: standard
+  - kind: script
+    entry: base.py
+    timeout_s: 35
+    reveal: standard

@@ -1,0 +1,15 @@
+id: s040-frontier-portfolio
+name: The Assembly Exchange
+tier: 6
+region: world-three
+capabilities: [exact-optimization, tree-decomposition, optimal-witnesses]
+brief_file: brief.md
+attempts: 3
+seedable: true
+timeout_s: 1200
+tool_budget: 100
+oracles:
+  - kind: differential
+    entry: checker.py
+    timeout_s: 40
+    reveal: full

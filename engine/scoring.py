@@ -70,6 +70,8 @@ def segment_scores(board, selected_ids, timeline) -> list[dict]:
     """Equal weight per stage after dividing out its tier-specific maximum."""
     results = {row["stage"]: row for row in timeline}
     selected = set(selected_ids)
+    incomplete = next((i for i, stage in enumerate(board.stages, 1)
+                       if results.get(stage.id, {}).get("status") == "incomplete"), None)
     scores = []
     for world, segment in enumerate(board.segments, start=1):
         stages = board.stages[segment.first - 1:segment.last]
@@ -83,11 +85,15 @@ def segment_scores(board, selected_ids, timeline) -> list[dict]:
             if result.get("cleared"):
                 cleared += 1
                 fractions.append(result["points"] / best)
-        scores.append({
+        entry = {
             "world": world,
             "range": segment.id,
             "score": round(100 * sum(fractions) / len(stages), 2),
             "cleared": cleared,
             "stages": len(stages),
-        })
+        }
+        if incomplete is not None and incomplete <= segment.last:
+            entry["score"] = None
+            entry["status"] = "unplayed" if incomplete < segment.first else "incomplete"
+        scores.append(entry)
     return scores

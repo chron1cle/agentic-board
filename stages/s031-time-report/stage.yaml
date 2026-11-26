@@ -1,0 +1,15 @@
+id: s031-time-report
+name: The Revision Almanac
+tier: 6
+region: world-three
+capabilities: [event-time, historical-queries, incremental-aggregation]
+brief_file: brief.md
+attempts: 3
+seedable: true
+timeout_s: 720
+tool_budget: 60
+oracles:
+  - kind: script
+    entry: checker.py
+    timeout_s: 35
+    reveal: standard

@@ -11,11 +11,10 @@ from __future__ import annotations
 import json
 import re
 import shutil
-import subprocess
-import time
 from pathlib import Path
 
 from .base import HarnessAdapter, HarnessRequest, HarnessResult
+from .process import execute
 
 CONFIG_CANDIDATES = (
     "~/.config/opencode/opencode.jsonc",
@@ -48,33 +47,21 @@ class OpenCodeAdapter(HarnessAdapter):
 
     def run(self, request: HarnessRequest) -> HarnessResult:
         binary = self.bin_path or "opencode"
-        cmd = [binary, "run", "--format", "json", "--auto", "--archived",
+        # OpenCode's shared service can keep editing after its CLI has exited.
+        # A private server gives this attempt ownership of the shell and tool workers.
+        cmd = [binary, "run", "--standalone", "--format", "json", "--auto", "--archived",
                "--title", f"agentic-board {request.stage_id} a{request.attempt}"]
         model = request.model or self.model
         if model:
             cmd += ["--model", model]
         cmd.append(request.prompt)
 
-        started = time.monotonic()
-        try:
-            proc = subprocess.run(
-                cmd, cwd=str(request.workspace), capture_output=True,
-                text=True, errors="replace", timeout=request.timeout_s,
-            )
-        except subprocess.TimeoutExpired as exc:
-            raw = exc.stdout or ""
-            if isinstance(raw, bytes):
-                raw = raw.decode("utf-8", errors="replace")
-            result = parse_opencode_stream(raw, 124, round(time.monotonic() - started, 2))
+        process = execute(cmd, request.workspace, request.timeout_s)
+        result = parse_opencode_stream(process.raw, process.exit_code, process.seconds, process.error)
+        if process.timed_out:
             result.timed_out = True
             result.error = "harness timed out"
-            return result
-        except (OSError, FileNotFoundError) as exc:
-            return HarnessResult(exit_code=127, error=f"could not start harness: {exc}",
-                                 seconds=round(time.monotonic() - started, 2))
-
-        return parse_opencode_stream(proc.stdout, proc.returncode,
-                                      round(time.monotonic() - started, 2), proc.stderr)
+        return result
 
 
 def _shrink(value, limit: int = 240):

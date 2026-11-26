@@ -25,8 +25,9 @@ class ValidateTest(unittest.TestCase):
     def test_the_shipped_board_validates(self):
         code, out = run_cli("validate")
         self.assertEqual(code, 0)
-        self.assertIn("20 stages", out)
-        self.assertIn("s020-swap-relays", out)
+        self.assertIn("30 stages", out)
+        self.assertIn("1-10  s009-tests-that-test", out)
+        self.assertIn("2-10  s020-swap-relays", out)
 
     def test_a_broken_board_is_exit_1(self):
         with tempfile.TemporaryDirectory() as tmp:
@@ -92,6 +93,17 @@ class IndexTest(unittest.TestCase):
         entry = json.loads(write_index(self.tmp).read_text())["runs"][0]
         self.assertEqual(len(entry["timeline"]), 3)
         self.assertEqual(entry["timeline"][1]["cumulative"], 100.0)
+
+    def test_replays_keep_the_level_from_the_board_that_was_played(self):
+        for version in ("3", "4"):
+            code, _ = run_cli("run", "--board", str(ROOT / "boards" / f"v{version}.yaml"),
+                              "--out", str(self.tmp), "--harness", "solve", "--only", "s005-log-search",
+                              "--quiet", "--run-id", f"released-{version}")
+            self.assertEqual(code, 0)
+        entries = json.loads((self.tmp / "index.json").read_text())["runs"]
+        locations = {entry["boardVersion"]: (entry["timeline"][0]["world"], entry["timeline"][0]["level"])
+                     for entry in entries}
+        self.assertEqual(locations, {"3": (1, 5), "4": (1, 3)})
 
     def test_a_corrupt_run_is_skipped_not_fatal(self):
         self._write("r-good", "fake", "m", 1, 10.0)

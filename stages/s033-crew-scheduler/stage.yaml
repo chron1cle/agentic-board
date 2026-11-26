@@ -1,0 +1,15 @@
+id: s033-crew-scheduler
+name: The Shift Exchange
+tier: 6
+region: world-three
+capabilities: [preemption, dependency-scheduling, event-ordering]
+brief_file: brief.md
+attempts: 3
+seedable: true
+timeout_s: 840
+tool_budget: 75
+oracles:
+  - kind: script
+    entry: checker.py
+    timeout_s: 35
+    reveal: standard

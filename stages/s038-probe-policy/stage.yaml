@@ -1,0 +1,15 @@
+id: s038-probe-policy
+name: The Diagnostic Console
+tier: 6
+region: world-three
+capabilities: [adaptive-testing, partial-observations, worst-case-planning]
+brief_file: brief.md
+attempts: 3
+seedable: true
+timeout_s: 900
+tool_budget: 80
+oracles:
+  - kind: differential
+    entry: checker.py
+    timeout_s: 40
+    reveal: full

@@ -10,12 +10,13 @@ from __future__ import annotations
 
 import json
 import shutil
+import tempfile
 import time
 from dataclasses import dataclass
 from pathlib import Path
 
 from . import oracles as oracle_mod
-from .feedback import (AttemptRecord, VERDICT_BUDGET, VERDICT_ERROR, VERDICT_FAIL,
+from .feedback import (AttemptRecord, VERDICT_INCOMPLETE, VERDICT_ERROR, VERDICT_FAIL,
                        VERDICT_INTEGRITY, VERDICT_PASS, build_prompt)
 from .harness.base import HarnessAdapter, HarnessRequest
 from .runrecord import RunRecord, StageResult
@@ -122,6 +123,18 @@ class Orchestrator:
                     reveal="full", tier=spec.kind))
         return checks
 
+    def _verify_at_timeout(self, stage: Stage, box: Sandbox) -> list:
+        """Grade the stopped attempt once, preserving the workspace as it was submitted."""
+        try:
+            with tempfile.TemporaryDirectory(prefix="board-deadline-") as tmp:
+                snapshot = Sandbox(Path(tmp), box.original, stage.protected)
+                shutil.copytree(box.workspace, snapshot.workspace, symlinks=True)
+                snapshot.oracle_dir = box.oracle_dir
+                snapshot.oracle_seed = box.oracle_seed
+                return self._verify(stage, snapshot)
+        except OSError:
+            return [oracle_mod.Check("snapshot:error", False, "could not copy the deadline workspace")]
+
     # -- one stage ---------------------------------------------------------
     def play_stage(self, stage: Stage, index: int) -> StageResult:
         result = StageResult(id=stage.id, name=stage.name, tier=stage.tier,
@@ -152,15 +165,15 @@ class Orchestrator:
             left = stage.timeout_s - (time.monotonic() - stage_clock)
             if left < 1:
                 self.emit("attempt.ended", stage=stage.id, attempt=number,
-                          verdict=VERDICT_BUDGET, tools=0, seconds=0, tokens=0,
+                          verdict=VERDICT_INCOMPLETE, started=False, timed_out=True, tools=0, seconds=0, tokens=0,
                           failed=["stage-clock"])
                 attempts.append(AttemptRecord(
-                    n=number, verdict=VERDICT_BUDGET, started=False,
+                    n=number, verdict=VERDICT_INCOMPLETE, started=False, timed_out=True,
                     checks=[oracle_mod.Check("stage-clock", False,
                                              f"stage budget of {stage.timeout_s}s "
                                              "exhausted before this attempt",
                                              reveal="full")]))
-                result.attempts = attempts
+                result.status = VERDICT_INCOMPLETE
                 break
 
             prompt = build_prompt(stage.brief, attempts, stage.attempts - number,
@@ -169,36 +182,35 @@ class Orchestrator:
             harness_result = self.adapter.run(HarnessRequest(
                 prompt=prompt, workspace=box.workspace, timeout_s=int(left),
                 stage_id=stage.id, attempt=number, model=self.config.model))
-            self._write_transcript(stage, number, prompt, harness_result)
-
             violations = box.integrity_violations()
             if violations:
                 verdict = VERDICT_INTEGRITY
                 checks = [oracle_mod.Check("integrity", False,
                                            "protected paths modified: "
                                            + ", ".join(violations[:6]), reveal="full")]
-            elif harness_result.timed_out:
-                verdict = VERDICT_BUDGET
-                checks = [oracle_mod.Check("timeout", False,
-                                           f"stage budget of {stage.timeout_s}s exhausted",
-                                           reveal="full")]
-            elif not harness_result.ok:
+            elif not harness_result.ok and not harness_result.timed_out:
                 verdict = VERDICT_ERROR
                 checks = [oracle_mod.Check("harness-error", False, "harness reported an error")]
             else:
-                checks = self._verify(stage, box)
+                checks = (self._verify_at_timeout(stage, box) if harness_result.timed_out
+                          else self._verify(stage, box))
                 if not checks or any(c.name.endswith((":error", ":timeout")) for c in checks):
                     verdict = VERDICT_ERROR
+                elif all(c.ok for c in checks):
+                    verdict = VERDICT_PASS
+                elif harness_result.timed_out:
+                    verdict = VERDICT_INCOMPLETE
                 else:
-                    verdict = VERDICT_PASS if all(c.ok for c in checks) else VERDICT_FAIL
+                    verdict = VERDICT_FAIL
 
+            self._write_transcript(stage, number, prompt, harness_result)
             record = AttemptRecord(
                 n=number, verdict=verdict, checks=checks,
                 tool_calls=harness_result.tool_calls,
                 seconds=round(harness_result.seconds, 2),
                 tokens=harness_result.tokens,
                 tools_reported=harness_result.tools_reported,
-                tokens_reported=harness_result.tokens_reported)
+                tokens_reported=harness_result.tokens_reported, timed_out=harness_result.timed_out)
             attempts.append(record)
             result.attempts_used = number
             result.tool_calls += harness_result.tool_calls
@@ -208,11 +220,11 @@ class Orchestrator:
                 result.integrity_violation = True
 
             self.emit("attempt.ended", stage=stage.id, attempt=number,
-                      verdict=verdict, tools=harness_result.tool_calls,
+                      verdict=verdict, timed_out=record.timed_out, tools=harness_result.tool_calls,
                       seconds=record.seconds, tokens=harness_result.tokens,
                       failed=[c.name for c in checks if not c.ok])
 
-            if verdict in (VERDICT_INTEGRITY, VERDICT_ERROR):
+            if verdict in (VERDICT_INTEGRITY, VERDICT_ERROR, VERDICT_INCOMPLETE):
                 result.status = verdict
                 break
 
@@ -226,7 +238,9 @@ class Orchestrator:
                           points=result.points)
                 break
 
-        if not result.cleared:
+        if result.status == VERDICT_INCOMPLETE:
+            self.emit("stage.incomplete", stage=stage.id, attempts=result.attempts_used)
+        elif not result.cleared:
             self.emit("stage.failed", stage=stage.id, attempts=len(attempts))
         result.attempts = attempts
         return result
@@ -238,6 +252,7 @@ class Orchestrator:
         path.write_text(json.dumps({
             "prompt": prompt,
             "exit_code": harness_result.exit_code,
+            "timed_out": harness_result.timed_out,
             "tool_calls": harness_result.tool_calls,
             "tokens": harness_result.tokens,
             "seconds": harness_result.seconds,
@@ -291,7 +306,7 @@ class Orchestrator:
             record.notes.append("One or more attempts omitted tool or token accounting.")
         record.score_segments = segment_scores(self.config.board, selected_ids, record.cumulative_score())
         record.finished = time.time()
-        self.emit("run.ended", stageReached=record.stage_reached,
+        self.emit("run.ended", status=record.status, stageReached=record.stage_reached,
                   points=record.points, stoppedAt=record.stopped_at, selectedStages=len(stages))
         record.save(self.run_dir)
         return record

@@ -1,0 +1,16 @@
+id: s028-sdk-compat
+name: The Instrument Retrofit
+tier: 6
+region: world-three
+capabilities: [contract-implementation, regression-analysis]
+brief_file: brief.md
+attempts: 3
+seedable: true
+timeout_s: 960
+tool_budget: 85
+protected: [sensor_v2.py, sensor_legacy.py]
+oracles:
+  - kind: script
+    entry: checker.py
+    timeout_s: 35
+    reveal: standard

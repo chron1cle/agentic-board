@@ -1,0 +1,15 @@
+id: s041-branch-reports
+name: The Branch Archive
+tier: 6
+region: world-three
+capabilities: [incremental-aggregation, versioned-data, range-queries]
+brief_file: brief.md
+attempts: 3
+seedable: true
+timeout_s: 900
+tool_budget: 80
+oracles:
+  - kind: differential
+    entry: checker.py
+    timeout_s: 40
+    reveal: full

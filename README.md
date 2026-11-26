@@ -15,8 +15,9 @@ exactly these changes"* — and given a fresh sandbox and a fresh harness sessio
 it finishes, the engine calls the stage oracle to check the output. Pass, and it advances.
 Fail, and it gets a terse error report and another attempt, from a pristine workspace
 every time. Three failures on one stage ends the run, and the highest stage cleared
-becomes its level. Stages escalate from single-file text edits to a whole-codebase
-migration and then to stateful routing with a growing set of rules.
+becomes its level. World 1 progresses from single-file edits to multi-module
+migration and test design. World 2 adds a routing rule at each level. World 3
+uses independent engineering challenges with seeded checks.
 
 ## Headline metrics
 
@@ -33,21 +34,27 @@ were no eligible retries.
 
 ## The board
 
-Board v2 contains twenty stages across six regions. The first ten are the v1
-spine. `python3 -m engine validate` lists all stages.
+Board v4 has three worlds of ten levels. Level 1 opens each world and level 10
+is its intended hardest test. A stage ID identifies a task across releases.
+Its world and level number come from the selected board version. `python3 -m engine validate` lists all stages.
 
 | # | Stage | Tier | Region | What it tests | Base |
 | --- | --- | --- | --- | --- | --- |
-| 1 | `s001-exact-edit` | 1 | Plains of Edit | make exactly three edits, change nothing else | 100 |
-| 2 | `s002-json-repair` | 1 | Plains of Edit | repair malformed JSON against a schema | 100 |
-| 3 | `s003-rename-symbol` | 2 | Caverns of Search | rename a symbol across a small codebase | 150 |
-| 4 | `s004-offbyone` | 2 | Caverns of Search | find and fix an off-by-one in failing tests | 150 |
-| 5 | `s005-log-search` | 2 | Caverns of Search | search a large log for the answers to questions | 150 |
-| 6 | `s006-sessionizer` | 3 | The Foundry | write a module to a written spec, hidden tests | 200 |
-| 7 | `s007-cli-spec` | 3 | The Foundry | build a CLI that matches a spec exactly, incl. exit codes | 200 |
-| 8 | `s008-pipeline-fix` | 4 | Labyrinth of Debug | fix a broken concurrent pipeline under a hidden checker | 250 |
-| 9 | `s009-tests-that-test` | 5 | Spire of Systems | write tests that kill injected mutants | 300 |
-| 10 | `s010-codemod-migration` | 6 | The Summit | migrate a codebase from a legacy API to a v2 SDK | 350 |
+| 1-1 | `s001-exact-edit` | 1 | Plains of Edit | make exactly three edits, change nothing else | 100 |
+| 1-2 | `s002-json-repair` | 1 | Plains of Edit | repair malformed JSON against a schema | 100 |
+| 1-3 | `s005-log-search` | 2 | Caverns of Search | search a large log for the answers to questions | 150 |
+| 1-4 | `s003-rename-symbol` | 2 | Caverns of Search | rename a symbol across a small codebase | 150 |
+| 1-5 | `s004-offbyone` | 2 | Caverns of Search | find and fix an off-by-one in failing tests | 150 |
+| 1-6 | `s006-sessionizer` | 3 | The Foundry | write a module to a written spec, hidden tests | 200 |
+| 1-7 | `s008-pipeline-fix` | 4 | Labyrinth of Debug | fix a broken concurrent pipeline under a hidden checker | 250 |
+| 1-8 | `s007-cli-spec` | 3 | The Foundry | build a CLI that matches a spec exactly, incl. exit codes | 200 |
+| 1-9 | `s010-codemod-migration` | 6 | The Summit | migrate a codebase from a legacy API to a v2 SDK | 350 |
+| 1-10 | `s009-tests-that-test` | 5 | Spire of Systems | write tests that kill injected mutants | 300 |
+
+The archived World 1 pilot cleared every stage on the first try. World 1 now
+starts with bounded edits and a log lookup. It ends with migrating several
+modules to a new SDK and designing tests that catch injected faults. The latter
+two used the most tokens in that pilot.
 
 The ten Summit routing levels add one switch and one rule per level. Each
 retains the prior rules and grades independently on a fresh workspace. A hidden
@@ -56,31 +63,35 @@ portion of the state space doubles at each step, from 2 configurations to 1,024.
 
 | Level | Added rule | Reachable switch configurations |
 | --- | --- | ---: |
-| 11 | Toggle switches and satisfy arrival requirements | 2 |
-| 12 | Gates that require a switch to be on | 4 |
-| 13 | Gates that require a switch to be off | 8 |
-| 14 | Clear switches | 16 |
-| 15 | Set switches | 32 |
-| 16 | Discounts for switches that are on | 64 |
-| 17 | Exact terminal switch configuration | 128 |
-| 18 | Discounts for switches that are off | 256 |
-| 19 | Copy switch values | 512 |
-| 20 | Swap switch values | 1,024 |
+| 2-1 | Toggle switches and satisfy arrival requirements | 2 |
+| 2-2 | Gates that require a switch to be on | 4 |
+| 2-3 | Gates that require a switch to be off | 8 |
+| 2-4 | Clear switches | 16 |
+| 2-5 | Set switches | 32 |
+| 2-6 | Discounts for switches that are on | 64 |
+| 2-7 | Exact terminal switch configuration | 128 |
+| 2-8 | Discounts for switches that are off | 256 |
+| 2-9 | Copy switch values | 512 |
+| 2-10 | Swap switch values | 1,024 |
 
 Each level compares the submitted JSON Lines program with an independent
 reference on seeded graphs, targeted rule checks, and cases exercising every
 switch. The exponential growth is a property of the test instances. Model pass
-rates and the relative difficulty of the routing levels still need calibration.
+rates still need calibration. The World 2 pilot cleared all ten on its first
+try, so v4 retains the cumulative rule order as its complexity ranking.
 
 Base points are `100 × (1 + 0.5 × (tier − 1))`. Clear multipliers are 1.2, 0.75,
 and 0.50 for attempts one through three, with penalties for exceeding the
-tool budget. A perfect v2 run earns 6,540 points.
+tool budget. A task keeps its tier and raw value when it moves to a new level
+position. A perfect v4 run earns 10,740 points.
 
-Board v2 has two ten-level worlds. The opening level is **1-1**, and the
-Summit begins at **2-1**. Each world reports a **score out of 100**. Each stage contributes
+The opening level is **1-1**, the Summit begins at **2-1**, and the Deep Works
+begins at **3-1**. Each world reports a **score out of 100**. Each stage contributes
 its earned points divided by its own first-try maximum, and the world score
-averages those shares across its ten levels. Failed and unreached stages
-contribute zero. For example, five first-try clears at full points earn 50/100
+averages those shares across its ten levels. For a run ended by ordinary failures, failed and unreached stages
+contribute zero. When the test clock interrupts a run, earned raw points and
+completed world scores remain visible. The interrupted world has no final
+score and later worlds are marked unplayed. For example, five first-try clears at full points earn 50/100
 in either half. The original tier-weighted points remain available in the replay.
 
 Every stage ships two **controls**: a `fixed` workspace that must pass the oracle and
@@ -90,6 +101,78 @@ so the controls are checked in CI:
 ```bash
 python3 -m engine controls
 ```
+
+
+### World 3 · The Deep Works
+
+On board v3, OpenCode with its configured Qwen default cleared eight of ten
+independent levels on seed 1. The SDK retrofit and delivery repair cleared
+in 36 and 41 seconds. The framing task exhausted its stage clock and the
+reporting task failed on multiple JSON Lines inputs. These observations are
+from one trial per level. A timeout also depends on the harness and hardware.
+
+| Level | Task | What makes the next part of the world harder |
+| --- | --- | --- |
+| 3-1 | Instrument Retrofit | Adapt callers to a new sensor interface. |
+| 3-2 | Silent Dispatch | Coordinate retries, duplicate orders, and totals across two services. |
+| 3-3 | Echo Ledger | Reconcile duplicates and conflicting events independently of arrival order. |
+| 3-4 | Archive Bridge | Support reads and safe upgrades across two on-disk formats. |
+| 3-5 | Revision Almanac | Answer historical queries across revisions, deletions, and UTC day changes at scale. |
+| 3-6 | Transfer Press | Resolve simultaneous rename cycles and publish atomically after validating every batch. |
+| 3-7 | Narrow Channel | Parse a fragmented binary stream under backpressure and a memory limit. |
+| 3-8 | Shift Exchange | Pause and resume multi-worker jobs across staffing changes, cancellations, and long idle periods. |
+| 3-9 | Portfolio Engine | Find an exact optimum under two shared budgets, interacting item values, and tie rules. |
+| 3-10 | Commit Furnace | Recover interleaved transactions across restarts, stale writes, and partial or compacted logs. |
+
+The v4 order is provisional. Compare independent first-try and eventual clear
+rates on matching seeds across weak, medium, and strong models. Use more seeds
+when neighboring levels are tied. Record budget exhaustion separately from
+incorrect solutions. The design target is about five independent clears in
+World 3 for the OpenCode/Qwen 120B baseline. A stage cleared on a retry counts
+as one clear but earns fewer game points.
+
+On seed 1, the same OpenCode default cleared all ten v4 levels. It cleared
+nine on the first attempt, including the exact portfolio planner. Journal
+recovery passed on the second attempt. The result exceeded the five-clear
+target and prompted a separate pilot of harder tasks. Both pilots used one
+independent trial per level with the standard clock and retries.
+
+```bash
+python3 -m engine run --harness opencode --world 3
+python3 -m engine calibrate --harness opencode --world 3 --seed 1 --seed 37
+```
+
+Normal play stops when a level exhausts its attempts. Calibration starts each
+level independently on each supplied seed, with the standard retry rules
+within a level. Repeat a seed to run additional trials on the same inputs.
+The report shows clears, first-try passes, decided trials, incompletes, and
+invalid trials. Its clear rate divides clears by decided trials (passes and
+ordinary failures). For example, five clears, two failures, and three incomplete
+trials give 5/7 decided, with 7/10 coverage. A run with only incompletes has
+no clear rate. An infrastructure or integrity error also withholds the aggregate
+rate. Difficulty groups compare only levels with decided results on every
+requested trial, ordering by eventual clears and then first-try passes.
+Calibration records are stored separately from sequential runs in Results.
+
+**Deadline grading (run schema 3).** The stage clock limits how long the harness
+can work. At timeout the engine grades a copy of the stopped workspace with
+the same checks and seed as a normal submission. A verified pass earns the
+normal points for that attempt and unlocks the next level. If the work falls
+short, the level is **incomplete** and sequential play stops. Calibration
+continues to the next independent trial. The attempt records its timeout
+separately from its verdict. Integrity violations and checker errors keep their
+own verdicts. Runtime limits on the submitted program inside a level's tests
+remain part of that level's requirements.
+
+The OpenCode connector starts a private server for each attempt and stops its
+process group at the deadline. Legacy OpenCode sessions could keep editing
+after their CLI timed out. Their historical scores use their original rules
+and appear in separate comparison groups.
+
+Use the same harness for initial model comparisons. Record local hardware and
+use a clock budget that gives the selected local configuration time to generate.
+Pilot the 120B-class and frontier baselines before using this board to make
+claims about either group.
 
 ## Quickstart
 
@@ -127,7 +210,7 @@ you blame a model: *is this board completable at all?*
 
 ```bash
 python3 -m engine run --harness solve --run-id reference
-# stage reached 20 / 20, points 6540.0, first-try rate 100%
+# stages cleared 30 / 30, points 10740.0, first-try rate 100%
 ```
 
 CI uses this run to verify a complete playthrough. It is also the cheapest way to get a full board to look at in the viewer.
@@ -191,16 +274,18 @@ Useful flags:
 
 | Flag | Meaning |
 | --- | --- |
-| `--board boards/v1.yaml` | play the original ten-stage board. The default is `boards/v2.yaml`. |
+| `--board boards/v1.yaml` | play the original ten-stage board. The default is `boards/v4.yaml`. |
 | `--limit N` | play only the first N stages — good for a cheap calibration run |
 | `--harness-bin PATH` | override the executable for an adapter. Required for `command`. |
 | `--only s006-sessionizer` | one stage, for authoring or debugging |
-| `--world 1` or `--world 2` | run one world independently. The equivalent stage ranges are `--segment 1-10` and `--segment 11-20`. |
-| `--seed N` | selects hidden graph cases on levels 11–20. The v1 fixtures are static. |
+| `--world 1`, `--world 2`, or `--world 3` | run one world independently. The equivalent stage ranges are `--segment 1-10`, `--segment 11-20`, and `--segment 21-30`. |
+| `--seed N` | selects hidden routing and engineering cases in Worlds 2 and 3. World 1 fixtures are static. |
 | `--out DIR` | where runs land (default `runs/`) |
 | `--quiet` | just the summary, no live event stream |
 
-The per-stage clock is shared across at most three attempts. Use `--only` to
+A sequential run ending incomplete returns exit code 3. A calibration with
+incompletes also returns 3 unless an infrastructure or integrity error takes
+precedence. The per-stage clock is shared across at most three attempts. Use `--only` to
 sample a specific routing level or `--limit` to sample the opening of the board.
 For example, `--only s020-swap-relays --seed 37` plays the final level alone.
 
@@ -282,7 +367,8 @@ In the app:
 - **Tests** — browse stage tasks, verification methods, scoring, and budgets.
 - **How to** — configure built-in adapters, connect a custom wrapper, and load results.
 
-World 1 uses an ascending spiral and World 2 uses a rising zigzag. Configure
+World 1 uses an ascending spiral, World 2 uses a rising zigzag, and World 3
+uses forge terraces with copper lift rails and turning gears. Configure
 new world ranges in the board YAML and add their path, platform geometry,
 and palette to `board/src/worldThemes.js`. The same bot and replay controls
 follow the path for every world.
@@ -324,7 +410,9 @@ DESIGN.md              the design record — start here
 AGENTS.md              rules for agents working in this repo
 SECURITY.md            secret-handling policy
 boards/v1.yaml         the original ten-stage spine
-boards/v2.yaml         the default twenty-stage spine
+boards/v2.yaml         the twenty-stage board
+boards/v3.yaml         the original World 3 pilot board
+boards/v4.yaml         the current thirty-stage difficulty order
 stages/                stage definitions: workspace, oracle, controls
 engine/                orchestrator, oracles, sandbox, harness adapters, CLI
 engine/harness/        native adapters, command adapter, and controls

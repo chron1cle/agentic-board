@@ -1,8 +1,11 @@
 """Harness adapters: the fake that drives the tests, and the opencode parser."""
 
+import fcntl
 import json
 import shutil
 import tempfile
+import textwrap
+import time
 import unittest
 from pathlib import Path
 
@@ -107,6 +110,54 @@ class OpenCodeParsingTest(unittest.TestCase):
 
     def test_raw_stream_is_kept_for_the_transcript(self):
         self.assertIn("step_start", parse_opencode_stream(self.raw, 0, 1.0).raw)
+
+
+class OpenCodeDeadlineTest(unittest.TestCase):
+    def test_timeout_stops_the_private_worker_and_keeps_its_usage(self):
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            # A worker that outlives its CLI retains the lock and can still
+            # write solutions or compete with the next stage for inference.
+            (root / "worker.py").write_text(textwrap.dedent("""\
+                import fcntl
+                import time
+                from pathlib import Path
+                with Path("lease").open("w") as lease:
+                    fcntl.flock(lease, fcntl.LOCK_EX)
+                    Path("ready").touch()
+                    time.sleep(8)
+            """))
+            binary = root / "cli"
+            binary.write_text(textwrap.dedent("""\
+                #!/usr/bin/env python3
+                import json
+                import subprocess
+                import sys
+                import time
+                from pathlib import Path
+                assert "--standalone" in sys.argv
+                subprocess.Popen([sys.executable, "worker.py"])
+                while not Path("ready").exists():
+                    time.sleep(0.01)
+                print(json.dumps({"type": "step_finish", "part": {"tokens": {"output": 7}}}), flush=True)
+                time.sleep(8)
+            """))
+            binary.chmod(0o755)
+            request = request_for(root)
+            request.timeout_s = 1
+            result = OpenCodeAdapter(bin_path=str(binary)).run(request)
+            self.assertTrue(result.timed_out)
+            self.assertEqual((result.exit_code, result.tokens), (124, 7))
+            with (root / "lease").open() as lease:
+                deadline = time.monotonic() + 1
+                while True:
+                    try:
+                        fcntl.flock(lease, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                        break
+                    except BlockingIOError:
+                        if time.monotonic() >= deadline:
+                            self.fail("OpenCode worker retained the workspace after its deadline")
+                        time.sleep(0.01)
 
 
 class AdapterPlumbingTest(unittest.TestCase):

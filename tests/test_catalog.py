@@ -1,18 +1,15 @@
 """The viewer catalog should cover all shipped stages and expose only public metadata."""
 
-from pathlib import Path
 import unittest
 
 from engine.catalog import public_catalog
+from engine.cli import DEFAULT_BOARD
 from engine.harness import REGISTRY
 from engine.spec import load_board
 
-ROOT = Path(__file__).resolve().parents[1]
-
-
 class CatalogTest(unittest.TestCase):
     def setUp(self):
-        self.board = load_board(ROOT / "boards" / "v2.yaml")
+        self.board = load_board(DEFAULT_BOARD)
         self.catalog = public_catalog(self.board)
 
     def test_catalog_matches_the_board_and_adapter_registry(self):
@@ -20,7 +17,7 @@ class CatalogTest(unittest.TestCase):
         self.assertEqual([row["id"] for row in stages], [stage.id for stage in self.board.stages])
         self.assertTrue(all(row["description"] and row["measurement"] for row in stages))
         self.assertEqual([(row["world"], row["level"]) for row in stages],
-                         [(world, level) for world in (1, 2) for level in range(1, 11)])
+                         [(world, level) for world in (1, 2, 3) for level in range(1, 11)])
         self.assertEqual({row["id"] for row in self.catalog["connectors"]}, set(REGISTRY))
 
     def test_routing_tests_have_distinct_explanations_in_three_groups(self):

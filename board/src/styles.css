@@ -480,6 +480,7 @@ code {
   background: #141e2e;
 }
 
+.hud .verdict.incomplete,
 .hud .verdict.pending {
   color: var(--accent);
 }
@@ -504,6 +505,7 @@ code {
 .attempts .infrastructure_error,
 .attempts .integrity_violation { color: #ff8d85; }
 .attempts .running,
+.attempts .incomplete,
 .attempts .budget_exhausted { color: var(--accent); }
 
 .spine .stage-link {
@@ -534,6 +536,7 @@ code {
 
 .transport input[type='range'] { min-width: 36px; }
 
+.node-label .label.incomplete,
 .node-label .label.running { border-color: #766039; }
 
 @media (max-width: 550px) {

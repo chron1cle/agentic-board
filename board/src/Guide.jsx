@@ -19,11 +19,24 @@ function methodLabel({ kind, maxChangedLines, minKillRate, mutantCount }) {
   return METHODS[kind] || kind
 }
 
-const ROUTING_GROUPS = [
-  { id: 'gates', title: 'Switches and gates' },
-  { id: 'prices', title: 'Tolls and finishing rules' },
-  { id: 'signals', title: 'Switches working together' },
-]
+const ROUTING_TITLES = {
+  gates: 'Switches and gates',
+  prices: 'Tolls and finishing rules',
+  signals: 'Switches working together',
+}
+
+function groupRoutingStages(stages) {
+  const sections = []
+  for (const stage of stages) {
+    const group = stage.routingGroup
+    if (sections.at(-1)?.group !== group) {
+      const id = sections.some((section) => section.group === group) ? `${group}-${stage.id}` : group
+      sections.push({ group, id, stages: [] })
+    }
+    sections.at(-1).stages.push(stage)
+  }
+  return sections
+}
 
 function StageCards({ stages }) {
   if (!stages.length) return null
@@ -67,6 +80,8 @@ export function TestsGuide({ board }) {
     ].some((field) => field?.toLowerCase().includes(filter)))
   const routingStages = stages.filter((stage) => stage.routingGroup)
   const routingWorld = routingStages[0]?.world
+  const engineeringStages = stages.filter((stage) => stage.world === 3)
+  const codingStages = stages.filter((stage) => !stage.routingGroup && stage.world !== 3)
 
   return (
     <main className="guide">
@@ -85,18 +100,31 @@ export function TestsGuide({ board }) {
         Each attempt starts with a fresh workspace and a new harness session. On a retry,
         the harness receives the grader’s feedback from earlier attempts at that stage.
         Earlier edits are discarded. A submission clears the stage when it passes every
-        required check. Base points are adjusted for the clearing attempt and tool budget.
-        World scores average the share of available points earned on each stage, so both
-        worlds use the same 0–100 scale.
+        required check. If the clock expires, the grader checks the saved work. A pass earns
+        the usual points. Unfinished work is marked incomplete and ends sequential play.
+        Calibration reports it separately from passes and failures. Base points are adjusted for the clearing attempt and tool budget.
+        World scores average the share of available points earned on each level.
+        Levels are listed from intended easiest to hardest within each world.
+        Level numbers follow the board version shown above.
       </p>
-      <StageCards stages={stages.filter((stage) => !stage.routingGroup)} />
+      {codingStages.length > 0 && (
+        <section className="guide-routing" aria-labelledby="coding-heading">
+          <div className="guide-intro">
+            <h3 id="coding-heading">{codingStages[0].world != null ? `World ${codingStages[0].world} · ` : ''}Coding tasks</h3>
+            <p>Early levels ask for precise edits and lookups. Later levels require building,
+              debugging, and testing behavior across a project.</p>
+          </div>
+          <StageCards stages={codingStages} />
+        </section>
+      )}
       {routingStages.length > 0 && (
         <section className="guide-routing" aria-labelledby="routing-heading">
           <div className="guide-intro">
             <h3 id="routing-heading">{routingWorld != null ? `World ${routingWorld} · ` : ''}Summit routing tests</h3>
             <p>
               Think of a map of toll roads and switches. Each level adds a rule and keeps the
-              earlier ones. The program must give the cheapest valid trip, or report that no trip is possible.
+              earlier ones, doubling the possible switch settings. The program must give the
+              cheapest valid trip, or report that no trip is possible.
             </p>
             <p>
               The agent writes one solver per attempt. After the attempt ends, the grader starts
@@ -105,15 +133,26 @@ export function TestsGuide({ board }) {
               independently written solver’s answers to the same maps. This is differential testing.
             </p>
           </div>
-          {ROUTING_GROUPS.map(({ id, title }) => {
-            const group = routingStages.filter((stage) => stage.routingGroup === id)
-            return group.length > 0 && (
-              <section key={id} aria-labelledby={`routing-${id}`}>
-                <h4 id={`routing-${id}`} className="guide-section-title">{title}</h4>
-                <StageCards stages={group} />
-              </section>
-            )
-          })}
+          {groupRoutingStages(routingStages).map(({ id, group, stages }) => (
+            <section key={id} aria-labelledby={`routing-${id}`}>
+              <h4 id={`routing-${id}`} className="guide-section-title">{ROUTING_TITLES[group]}</h4>
+              <StageCards stages={stages} />
+            </section>
+          ))}
+        </section>
+      )}
+      {engineeringStages.length > 0 && (
+        <section className="guide-routing" aria-labelledby="engineering-heading">
+          <div className="guide-intro">
+            <h3 id="engineering-heading">World 3 · The Deep Works</h3>
+            <p>
+              The Deep Works progresses from data repair and compatibility to scheduling,
+              planning, and recovery. In normal play a failed level ends the run.
+              In a calibration run every level gets its own fresh start, including levels
+              after an incomplete or failed level.
+            </p>
+          </div>
+          <StageCards stages={engineeringStages} />
         </section>
       )}
       {!stages.length && <p role="status">No stages match “{query.trim()}”.</p>}
@@ -136,10 +175,15 @@ export function HowToGuide({ connectors }) {
         <pre>python3 -m engine run --harness codex --limit 1</pre>
         <p>
           Use <code>--model</code> to choose a model, <code>--only</code> to try a specific stage,
-          <code>--world 1</code> or <code>--world 2</code> to run one world, and{' '}
+          <code>--world 3</code> to run one world, and{' '}
           <code>--harness-bin</code> to override the executable. Use the same board version
           and seed when comparing full runs.
         </p>
+        <h3>Calibrate a world</h3>
+        <p>Calibration starts each level independently. The report groups levels by how often
+          the harness cleared them, then by how often it cleared them on its first attempt.
+          Tied results share a group.</p>
+        <pre>python3 -m engine calibrate --harness codex --world 3 --seed 1 --seed 37</pre>
         <h3>Watch the results</h3>
         <p>
           While a run is active, progress appears in the terminal. The viewer opens completed

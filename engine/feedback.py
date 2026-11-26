@@ -15,7 +15,8 @@ MAX_LEDGER = 6000
 
 VERDICT_PASS = "pass"
 VERDICT_FAIL = "fail"
-VERDICT_BUDGET = "budget_exhausted"
+VERDICT_INCOMPLETE = "incomplete"
+VERDICT_BUDGET = "budget_exhausted"  # Recorded by runners before schema 3.
 VERDICT_INTEGRITY = "integrity_violation"
 VERDICT_ERROR = "infrastructure_error"
 
@@ -32,11 +33,13 @@ class AttemptRecord:
     started: bool = True
     tools_reported: bool = True
     tokens_reported: bool = True
+    timed_out: bool = False
 
     def as_dict(self) -> dict:
         return {
             "n": self.n,
             "started": self.started,
+            "timed_out": self.timed_out,
             "verdict": self.verdict,
             "tools": self.tool_calls,
             "tools_reported": self.tools_reported,

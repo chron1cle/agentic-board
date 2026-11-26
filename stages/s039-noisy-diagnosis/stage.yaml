@@ -1,0 +1,15 @@
+id: s039-noisy-diagnosis
+name: The Blind Observatory
+tier: 6
+region: world-three
+capabilities: [noisy-observations, resource-planning, adaptive-testing]
+brief_file: brief.md
+attempts: 3
+seedable: true
+timeout_s: 1080
+tool_budget: 90
+oracles:
+  - kind: differential
+    entry: checker.py
+    timeout_s: 40
+    reveal: full

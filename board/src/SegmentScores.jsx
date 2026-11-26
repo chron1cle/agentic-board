@@ -5,7 +5,7 @@ export default function SegmentScores({ segments }) {
       {segments.map((segment) => (
         <li key={segment.range}>
           <span>{segment.world != null ? `World ${segment.world}` : `Stages ${segment.range}`}</span>
-          <strong>{segment.score}/100</strong>
+          <strong>{segment.score == null ? (segment.status === 'unplayed' ? 'Unplayed' : 'Incomplete') : `${segment.score}/100`}</strong>
         </li>
       ))}
     </ul>

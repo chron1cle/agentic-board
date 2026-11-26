@@ -4,7 +4,7 @@ A benchmark for coding agents, presented as a 3D board game. Each board node is 
 coding task with a machine-checkable outcome. An agent plays the board; how far it
 gets is the result.
 
-Status: **built and running.** The engine, the twenty-stage board `v2`, the unit tests,
+Status: **built and running.** The engine, the thirty-stage board `v4`, the unit tests,
 the 3D board and the results viewer exist and pass their own checks. This file is the
 record of what was decided and why; it is not aspirational — decisions marked
 **DECIDED** are settled.
@@ -78,18 +78,20 @@ Consequences we accepted:
 
 ### Attempt boundary
 
-An attempt ends when the harness process exits. The agent does not call the oracle
+An attempt ends when the harness finishes or the stage clock stops its workers. The agent does not call the oracle
 and never can. The oracle is owned by the orchestrator and runs in a separate
 privileged container that mounts only declared artifacts.
 
 ### Verdicts
 
-Three distinct failure verdicts, not one:
+Schema 3 records whether the clock expired independently of the oracle verdict.
 
 | Verdict | Meaning | Effect |
 | --- | --- | --- |
-| `failed` | oracle rejected the output | attempt consumed |
-| `budget_exhausted` | ran out of tool calls or time, never finished | attempt consumed |
+| `pass` | every required check passed, including on a stopped workspace | award normal attempt points and advance |
+| `fail` | harness finished and the oracle rejected the output | attempt consumed |
+| `incomplete` | stage clock expired without a verified pass, or before an attempt could start | end sequential play and exclude this trial from correctness rates |
+| `infrastructure_error` | harness or checker malfunction | unranked run |
 | `integrity_violation` | touched a protected path | run disqualified from the leaderboard |
 
 ---
@@ -202,15 +204,23 @@ stage_value(tier)   = 100 * (1 + 0.5 * (tier - 1))
 attempt 1 pass      1.00x  + 20% first-try bonus
 attempt 2 pass      0.75x
 attempt 3 pass      0.50x
-over budget         -5% per 25% over the stage tool/time budget
-speed bonus         +5% under the reference-agent median wall time
+over tool budget    -5% per 25% over the stage tool budget
+stage deadline      verify saved work and award normal points on a pass
 failed stage        0, run ends
 ```
 
+**DECIDED — grade the work available at the deadline.** The stage clock is an
+operator resource limit. Grade a copy of the stopped attempt using its original
+seed and the normal protected-path and oracle checks. A deadline pass receives
+the same points and progression as any other pass on that attempt. An
+incomplete ends the sequential run with no final score for the interrupted
+world. Calibration continues through every selected stage and reports
+incompletes separately from decided results.
+
 The local runner implements a shared stage clock across attempts. Tool budgets are
 point penalties, and runtime and token totals are harness-reported diagnostics.
-The whole-run wall-clock cap, token ceiling, and reference medians for speed bonuses
-remain planned.
+The whole-run wall-clock cap and token ceiling remain planned. Schema 3 uses
+runtime as a diagnostic and awards no hardware-dependent speed bonus.
 
 ### Headline metrics
 
@@ -246,7 +256,9 @@ Not in v1, recorded so they are not lost:
 Difficulty escalates on two axes at once: problem complexity, and tool sophistication
 (read → edit → search → shell → run tests → iterate → orchestrate).
 
-Six tiers, six nodes on the spine each.
+The original six-tier proposal below gives six examples per tier. Shipped
+boards take their level order from the versioned manifests. Tier determines
+raw point value, while position within a world represents estimated difficulty.
 
 ### Tier 1 — Precision · Plains of Edit
 Tools: read, write, edit.
@@ -311,6 +323,11 @@ Adds: reading failure evidence.
 Pilot every stage against three reference agents (strong / medium / weak) and *define*
 difficulty by empirical pass rate. Sort the spine by measured pass rate, not
 intuition. Expect to reshuffle heavily.
+
+Board v4 uses a provisional within-world order informed by the original
+OpenCode pilots and the interactions each task must handle. A board release
+freezes level positions. Revised task contracts get new stage IDs so earlier
+boards can still reproduce their original tasks and scores.
 
 ---
 

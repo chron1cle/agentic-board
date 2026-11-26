@@ -1,0 +1,15 @@
+id: s034-bundle-planner
+name: The Portfolio Engine
+tier: 6
+region: world-three
+capabilities: [exact-optimization, decomposition, tie-breaking]
+brief_file: brief.md
+attempts: 3
+seedable: true
+timeout_s: 900
+tool_budget: 80
+oracles:
+  - kind: script
+    entry: checker.py
+    timeout_s: 35
+    reveal: standard

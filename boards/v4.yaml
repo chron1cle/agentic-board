@@ -1,0 +1,38 @@
+id: agentic-board
+version: "4"
+# Provisional difficulty order within each world. See README for pilot evidence.
+segments:
+  - [1, 10]
+  - [11, 20]
+  - [21, 30]
+stages:
+  - s001-exact-edit
+  - s002-json-repair
+  - s005-log-search
+  - s003-rename-symbol
+  - s004-offbyone
+  - s006-sessionizer
+  - s008-pipeline-fix
+  - s007-cli-spec
+  - s010-codemod-migration
+  - s009-tests-that-test
+  - s011-toggle-routing
+  - s012-live-gates
+  - s013-dark-gates
+  - s014-reset-routing
+  - s015-latching-relays
+  - s016-live-tolls
+  - s017-terminal-state
+  - s018-dark-tolls
+  - s019-copy-relays
+  - s020-swap-relays
+  - s028-sdk-compat
+  - s029-delivery-regression
+  - s021-ledger-replay
+  - s022-storage-compat
+  - s031-time-report
+  - s032-batch-migration
+  - s024-stream-framing
+  - s033-crew-scheduler
+  - s034-bundle-planner
+  - s035-journal-recovery

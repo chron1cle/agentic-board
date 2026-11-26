@@ -14,7 +14,7 @@ const UP = [-Math.PI / 2, 0, 0]
 
 function verdictColor(verdict) {
   if (verdict === 'pass') return PASS
-  if (verdict === 'budget_exhausted') return GOLD
+  if (verdict === 'budget_exhausted' || verdict === 'incomplete') return GOLD
   return verdict ? FAIL : '#354052'
 }
 
@@ -68,11 +68,62 @@ function PlatformTrace({ sides, radius, color, height, intensity = 1, width = 0.
   return <Line points={points} color={color} lineWidth={1.7} transparent opacity={Math.min(1, 0.45 + intensity)} />
 }
 
-const StageIsland = memo(function StageIsland({ row, active, resolved, gateway, onSelect }) {
+function Gear({ position, radius, direction, metal, glow, reducedMotion }) {
+  const gear = useRef()
+  useFrame((_, delta) => {
+    if (!reducedMotion) gear.current.rotation.z += delta * direction * 0.78
+  })
+  return (
+    <group ref={gear} position={position}>
+      <mesh>
+        <torusGeometry args={[radius * 0.76, radius * 0.18, 6, 18]} />
+        <meshStandardMaterial color={metal} emissive={glow} emissiveIntensity={0.24} metalness={0.58} />
+      </mesh>
+      {[0, 1, 2].map((i) => (
+        <mesh key={i} rotation={[0, 0, i * Math.PI / 3]}>
+          <boxGeometry args={[radius * 1.42, radius * 0.15, radius * 0.16]} />
+          <meshStandardMaterial color={metal} metalness={0.58} />
+        </mesh>
+      ))}
+      {Array.from({ length: 10 }, (_, i) => {
+        const angle = i * Math.PI / 5
+        return (
+          <mesh key={i} rotation={[0, 0, angle]}
+            position={[Math.cos(angle) * radius * 0.93, Math.sin(angle) * radius * 0.93, 0]}>
+            <boxGeometry args={[radius * 0.3, radius * 0.27, radius * 0.22]} />
+            <meshStandardMaterial color={metal} metalness={0.55} />
+          </mesh>
+        )
+      })}
+    </group>
+  )
+}
+
+function Forge({ theme, reducedMotion }) {
+  const { metal, glow } = theme.forge
+  return (
+    <group position={[0.2, 0.24, -1.25]}>
+      <mesh position={[0.28, -0.15, -0.08]}>
+        <boxGeometry args={[1.74, 0.36, 0.34]} />
+        <meshStandardMaterial color={theme.deck} metalness={0.45} />
+      </mesh>
+      <mesh position={[0, 0.43, -0.12]}>
+        <boxGeometry args={[0.14, 1.15, 0.28]} />
+        <meshStandardMaterial color={theme.deck} />
+      </mesh>
+      <Gear position={[0, 0.65, 0.05]} radius={0.6} direction={1}
+        metal={metal} glow={glow} reducedMotion={reducedMotion} />
+      <Gear position={[0.82, 0.55, 0.05]} radius={0.38} direction={-1.58}
+        metal={metal} glow={glow} reducedMotion={reducedMotion} />
+    </group>
+  )
+}
+
+const StageIsland = memo(function StageIsland({ row, active, resolved, gateway, onSelect, reducedMotion }) {
   const theme = worldTheme(row.world)
   const { sides, rockSides, rockRotation, insetSides, traceSides } = theme.platform
   const accent = theme.accent || regionOf(row.region).color
-  const color = resolved ? (row.cleared ? PASS : FAIL) : active ? GOLD : accent
+  const color = resolved ? verdictColor(row.cleared ? 'pass' : row.status || 'fail') : active ? GOLD : accent
   return (
     <group position={row.position}>
       <group onClick={(event) => { event.stopPropagation(); onSelect(row.index0) }}>
@@ -103,7 +154,10 @@ const StageIsland = memo(function StageIsland({ row, active, resolved, gateway, 
         <meshStandardMaterial color={color} emissive={color}
           emissiveIntensity={resolved || active ? 0.65 : 0.13} />
       </mesh>
-      {gateway && (
+      {theme.forge && (row.level - 1) % theme.forge.interval === 0 && (
+        <Forge theme={theme} reducedMotion={reducedMotion} />
+      )}
+      {gateway && !theme.forge && (
         <group rotation={[0, -row.angle, 0]}>
           {[-1, 1].map((side) => (
             <group key={side} position={[side * 0.9, 0.33, -0.58]}>
@@ -151,7 +205,7 @@ function Pilot({ position, reducedMotion }) {
 
 function Burst({ row, age, final }) {
   const scale = 0.65 + age * (final ? 4 : 2.4)
-  const color = row.cleared ? (final ? GOLD : PASS) : FAIL
+  const color = row.cleared ? (final ? GOLD : PASS) : verdictColor(row.status || 'fail')
   const opacity = Math.max(0, 1 - age)
   return (
     <group position={row.position}>
@@ -230,8 +284,13 @@ function WorkOrbit({ row, activity }) {
 const Bridge = memo(function Bridge({ from, to, visited }) {
   const theme = worldTheme(to.world)
   const points = [from.position, to.position].map(([x, y, z]) => [x, y - 0.32, z])
+  const terraceLift = theme.forge && from.world === to.world && (to.level - 1) % theme.forge.interval === 0
   return (
     <group>
+      {terraceLift && [-0.24, 0.24].map((offset) => (
+        <Line key={offset} points={points.map(([x, y, z]) => [x + offset, y + 0.09, z])}
+          color={theme.forge.rail} lineWidth={2} />
+      ))}
       <Line points={points} color={theme.bridge} lineWidth={7} />
       <Line points={points} color={visited ? theme.accent || regionOf(to.region).color : theme.bridgeIdle}
         lineWidth={2} dashed dashSize={0.27} gapSize={0.22} />
@@ -272,14 +331,14 @@ export default function Scene({
       {points.map((row, i) => (
         <StageIsland key={row.stage} row={row} active={!overview && row === current}
           gateway={points[i - 1]?.world !== row.world || regionOf(points[i - 1]?.region).label !== regionOf(row.region).label}
-          resolved={resolved >= row.index0} onSelect={onSelect} />
+          resolved={resolved >= row.index0} onSelect={onSelect} reducedMotion={reducedMotion} />
       ))}
       {!preview && current && frame.arrived && (
         <group position={current.position}>
           <Attempts results={frame.attempts} active={frame.attempting} reducedMotion={reducedMotion} />
           <Html center position={[0, 2.32, 0]} className="node-label" style={{ pointerEvents: 'none' }}>
-            <div className={`label ${frame.resolved ? (current.cleared ? 'cleared' : 'failed') : 'running'}`}>
-              <b>{frame.resolved ? (current.cleared ? `+${current.points} raw points` : 'Run stopped') : (activity.checking ? 'Checking attempt' : 'Attempts in progress')}</b>
+            <div className={`label ${frame.resolved ? (current.cleared ? 'cleared' : current.status || 'failed') : 'running'}`}>
+              <b>{frame.resolved ? (current.cleared ? `+${current.points} raw points` : current.status === 'incomplete' ? 'Incomplete' : 'Run stopped') : (activity.checking ? 'Checking attempt' : 'Attempts in progress')}</b>
             </div>
           </Html>
         </group>

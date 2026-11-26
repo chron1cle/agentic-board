@@ -20,6 +20,7 @@ from pathlib import Path
 
 from . import harness as harness_mod
 from . import oracles as oracle_mod
+from .calibration import calibrate
 from .catalog import public_catalog
 from .orchestrator import Orchestrator, RunConfig
 from .runrecord import RunRecord
@@ -28,7 +29,7 @@ from .scoring import segment_scores
 from .spec import Board, SpecError, load_board
 
 ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_BOARD = ROOT / "boards" / "v2.yaml"
+DEFAULT_BOARD = ROOT / "boards" / "v4.yaml"
 
 
 def _board(args) -> Board:
@@ -43,9 +44,11 @@ def cmd_validate(args) -> int:
         return 1
     print(f"board {board.id} v{board.version} — {board.size} stages")
     width = max(len(s.id) for s in board.stages)
-    for stage in board.stages:
+    for position, stage in enumerate(board.stages, start=1):
         kinds = ", ".join(o.kind for o in stage.oracles)
-        print(f"  {stage.id:<{width}}  tier {stage.tier}  {stage.value():>4} pts  "
+        location = board.world_level(position)
+        level = "{world}-{level}".format(**location) if location else str(position)
+        print(f"  {level:>4}  {stage.id:<{width}}  tier {stage.tier}  {stage.value():>4} pts  "
               f"[{kinds}]")
     print("all stage definitions valid")
     return 0
@@ -109,8 +112,7 @@ def cmd_controls(args) -> int:
     return 0
 
 
-def cmd_run(args) -> int:
-    board = _board(args)
+def _adapter(args):
     adapter = harness_mod.create(args.harness, model=args.model, **(
         {"bin_path": args.harness_bin} if args.harness_bin else {}
     ))
@@ -118,8 +120,15 @@ def cmd_run(args) -> int:
     usable, why = adapter.available()
     if not usable:
         print(f"harness {args.harness!r} unavailable: {why}", file=sys.stderr)
-        return 2
+        return harness_name, None
+    return harness_name, adapter
 
+
+def cmd_run(args) -> int:
+    board = _board(args)
+    harness_name, adapter = _adapter(args)
+    if adapter is None:
+        return 2
     config = RunConfig(board=board, harness=harness_name, model=args.model,
                        seed=args.seed, out_dir=Path(args.out), limit=args.limit,
                        only=args.only, run_id=args.run_id, segment=args.segment, world=args.world)
@@ -137,12 +146,15 @@ def cmd_run(args) -> int:
             print(f"    attempt {event['attempt']} …", flush=True)
         elif kind == "attempt.ended":
             mark = "PASS" if event["verdict"] == "pass" else event["verdict"].upper()
-            extra = "" if event["verdict"] == "pass" else \
-                f"  failed: {', '.join(event['failed'][:3])}"
+            extra = f"  checks: {', '.join(event['failed'][:3])}" if event["failed"] else ""
+            if event.get("timed_out"):
+                mark += " (stage clock expired)"
             print(f"    attempt {event['attempt']}: {mark}  "
                   f"tools={event['tools']} {event['seconds']}s{extra}")
         elif kind == "stage.cleared":
             print(f"    cleared  +{event['points']} pts")
+        elif kind == "stage.incomplete":
+            print("    STAGE INCOMPLETE — stage clock expired")
         elif kind == "stage.failed":
             print(f"    STAGE FAILED after {event['attempts']} attempt(s) — run over")
         elif kind == "run.ended":
@@ -160,7 +172,25 @@ def cmd_run(args) -> int:
     write_index(Path(args.out))
     if record.status == "infrastructure_error":
         return 2
+    if record.status == "incomplete":
+        return 3
     return 0 if record.stage_reached == record.selected_stages else 1
+
+
+def cmd_calibrate(args) -> int:
+    board = _board(args)
+    harness_name, adapter = _adapter(args)
+    if adapter is None:
+        return 2
+    seeds = args.seed or [1]
+    path, levels = calibrate(
+        board, args.world, harness_name, adapter, args.model, seeds, args.out,
+        report=lambda message: print(message, flush=True),
+    )
+    print(f"saved {path}")
+    if any(level["validTrials"] + level["incompleteTrials"] < len(seeds) for level in levels):
+        return 2
+    return 3 if any(level["incompleteTrials"] for level in levels) else 0
 
 
 def print_summary(record: RunRecord) -> None:
@@ -169,7 +199,7 @@ def print_summary(record: RunRecord) -> None:
     print(f"  board {record.board} v{record.board_version}   seed {record.seed}   {record.status}")
     print("-" * 68)
     for row in record.cumulative_score():
-        mark = "PASS" if row["cleared"] else "FAIL"
+        mark = "PASS" if row["cleared"] else (row.get("status") or "fail").upper()
         level = f"{row['world']}-{row['level']}" if "world" in row else str(row["index"])
         print(f"  {level:>4}  {row['stage']:<26} {mark:<4} "
               f"att {row['attempts']}  +{row['points']:>6}  "
@@ -180,7 +210,8 @@ def print_summary(record: RunRecord) -> None:
     print(f"  points          {final['points']}")
     for segment in record.score_segments:
         label = f"world {segment['world']}" if "world" in segment else f"stages {segment['range']}"
-        print(f"  {label:<12} {segment['score']:g}/100")
+        score = segment["score"]
+        print(f"  {label:<12} " + (f"{score:g}/100" if score is not None else "no final score"))
     print(f"  first-try rate  {final['firstTryRate']:.0%}")
     trials = final["feedbackTrials"]
     uptake = f"{final['feedbackUptake']:.0%} ({trials} retries)" if trials else "—"
@@ -201,9 +232,10 @@ def cmd_report(args) -> int:
     print(json.dumps(data["final"], indent=2))
     for segment in data.get("scoreSegments", []):
         label = f"world {segment['world']}" if "world" in segment else f"stages {segment['range']}"
-        print(f"  {label:<12} {segment['score']:g}/100")
+        score = segment["score"]
+        print(f"  {label:<12} " + (f"{score:g}/100" if score is not None else "no final score"))
     for row in data["timeline"]:
-        mark = "PASS" if row["cleared"] else "FAIL"
+        mark = "PASS" if row["cleared"] else (row.get("status") or "fail").upper()
         level = f"{row['world']}-{row['level']}" if "world" in row else str(row["index"])
         print(f"  {level:>4}  {row['stage']:<26} {mark:<4} att {row['attempts']} "
               f"+{row['points']:>6} total {row['cumulative']:>7}")
@@ -214,7 +246,7 @@ def write_index(out_dir: Path) -> Path:
     """Aggregate every run into runs/index.json — the results viewer's data."""
     out_dir = Path(out_dir)
     entries = []
-    boards = [load_board(ROOT / "boards" / name) for name in ("v1.yaml", "v2.yaml")]
+    boards = [load_board(path) for path in sorted(DEFAULT_BOARD.parent.glob("v[0-9]*.yaml"))]
     for record_path in sorted(out_dir.glob("*/run.json")):
         try:
             data = json.loads(record_path.read_text(encoding="utf-8"))
@@ -380,11 +412,14 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--seed", type=int, default=1)
     p.set_defaults(func=cmd_controls)
 
+    def harness_options(p):
+        p.add_argument("--harness", default="opencode", choices=sorted(harness_mod.REGISTRY))
+        p.add_argument("--model", default=None)
+        p.add_argument("--harness-bin", help="override the adapter executable; required for command")
+
     p = sub.add_parser("run", help="play the board")
     common(p)
-    p.add_argument("--harness", default="opencode", choices=sorted(harness_mod.REGISTRY))
-    p.add_argument("--model", default=None)
-    p.add_argument("--harness-bin", help="override the adapter executable; required for command")
+    harness_options(p)
     p.add_argument("--seed", type=int, default=1)
     scope = p.add_mutually_exclusive_group()
     scope.add_argument("--limit", type=int, default=None, help="play only the first N stages")
@@ -394,6 +429,13 @@ def build_parser() -> argparse.ArgumentParser:
     p.add_argument("--run-id", default=None)
     p.add_argument("--quiet", action="store_true")
     p.set_defaults(func=cmd_run)
+
+    p = sub.add_parser("calibrate", help="play every level of a world as an independent trial")
+    common(p)
+    harness_options(p)
+    p.add_argument("--world", required=True, type=int)
+    p.add_argument("--seed", action="append", type=int, help="trial seed; repeat to run multiple trials")
+    p.set_defaults(func=cmd_calibrate)
 
     p = sub.add_parser("report", help="print a run summary")
     p.add_argument("run")

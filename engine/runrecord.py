@@ -14,7 +14,7 @@ from pathlib import Path
 from .feedback import AttemptRecord
 from .scoring import feedback_counts, feedback_uptake, first_try_rate
 
-SCHEMA_VERSION = 2
+SCHEMA_VERSION = 3
 
 
 @dataclass
@@ -111,6 +111,8 @@ class RunRecord:
                 "tier": stage.tier,
                 "region": stage.region,
                 "cleared": stage.cleared,
+                "status": stage.status,
+                "timedOut": any(a.timed_out for a in stage.attempts),
                 "attempts": stage.attempts_used,
                 "points": stage.points,
                 "cumulative": running,

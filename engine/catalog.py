@@ -43,6 +43,94 @@ TASKS = {
         "Migrate a service to a new messaging SDK and configuration format.",
         "Run hidden checks for config conversion, publishing and retry semantics, and migration hygiene.",
     ),
+    "s021-ledger-replay": (
+        "Rebuild account balances from a ledger that may repeat events or contain conflicting copies.",
+        "Shuffle seeded ledgers and verify that repeats count once and every conflicting ID is discarded.",
+    ),
+    "s022-storage-compat": (
+        "Upgrade a file format while keeping the original CLI usable with both formats.",
+        "Run the CLI repeatedly on old, current, and invalid files. Compare account totals, entry order, and files that should stay untouched.",
+    ),
+    "s023-late-event-report": (
+        "Rebuild daily reports when corrections and deletions arrive late.",
+        "Shuffle revisions and timestamp offsets, then compare the corrected totals by UTC calendar day.",
+    ),
+    "s024-stream-framing": (
+        "Read length-prefixed records from a binary stream and emit each result as soon as it arrives.",
+        "Test fragmented input, malformed records, and a stream larger than the program's memory allowance.",
+    ),
+    "s025-safe-migration": (
+        "Convert a file safely when the migration can stop partway through.",
+        "Simulate interruptions at every record boundary, check the original and destination, then retry and compare the finished output.",
+    ),
+    "s026-scheduler": (
+        "Schedule dependent jobs on a fixed number of workers while handling cancellations.",
+        "Compare ordered event traces for simultaneous cancellation and completion, chained dependencies, and priority rules.",
+    ),
+    "s027-resource-planner": (
+        "Choose the best set of items under a budget, dependencies, and incompatible choices.",
+        "Exhaustively solve small cases and verify finishable larger cases with known optima and deterministic tie-breaking.",
+    ),
+    "s028-sdk-compat": (
+        "Migrate several modules to a new sensor SDK while preserving their public interfaces.",
+        "Check public signatures and legacy imports, then exercise missing values, offline sensors, unit conversion, and request order.",
+    ),
+    "s029-delivery-regression": (
+        "Repair order intake, delivery retries, and totals after a simulated incident.",
+        "Replay seeded delivery scenarios and compare deduplication, exact gateway calls, rejection handling, and customer totals.",
+    ),
+    "s030-pipeline-recovery": (
+        "Recover an interrupted event pipeline and migrate its checkpoints.",
+        "Restart at successive checkpoint boundaries, replay revisions and deletions, and verify idempotence and handling of appended input.",
+    ),
+    "s031-time-report": (
+        "Answer what a daily report would have shown at a particular point in the arrival history.",
+        "Compare answers at every prefix of small shuffled histories and at thousands of out-of-order cutoffs in a larger ledger. Corrections can move records between UTC days.",
+    ),
+    "s032-batch-migration": (
+        "Rename stored records in batches, including swaps, and publish the converted file atomically.",
+        "Interrupt and retry conversions, introduce an invalid late batch, and check that readers holding the old file still see its original bytes.",
+    ),
+    "s033-crew-scheduler": (
+        "Keep jobs moving through staffing changes. A job can pause, resume, or lose a prerequisite while it waits.",
+        "Compare the event trace to a tick-by-tick simulation, then stretch the gaps between events and check that the order and timing still agree.",
+    ),
+    "s034-bundle-planner": (
+        "Select the most valuable compatible portfolio that fits both the spending limit and the space available. Pairs of items can earn a bonus or a penalty.",
+        "Check every possible selection on small inputs. Independently solve 48-item portfolios where groups compete for both budgets and ties have a defined winner.",
+    ),
+    "s035-journal-recovery": (
+        "Recover several clients’ overlapping transactions after a restart, including when part of the journal has already been archived.",
+        "Restart at each record boundary. Verify pending writes, conflict rollback, deletions, old checkpoints, and recovery when the last record arrives in pieces.",
+    ),
+    "s036-versioned-wiring": (
+        "Inspect old versions of a wiring diagram to tell whether two sensors agree, disagree, or have contradictory wiring.",
+        "Rebuild small diagrams independently for each query, then check thousands of branches that cut, replace, or contradict a wire in a long chain.",
+    ),
+    "s037-sensor-constraints": (
+        "Predict a sensor reading from another sensor in any saved version of a network. A loop can fix a reading or make the entire set of equations inconsistent.",
+        "Propagate readings directly through small graphs and verify predictions on a large branching history with known transformations.",
+    ),
+    "s038-probe-policy": (
+        "Choose the least expensive way to diagnose a device when the test itself can change the device and the same signal can have several causes.",
+        "Compare the worst-case cost and every optimal first probe against successively longer diagnostic plans. Include devices that can never be diagnosed.",
+    ),
+    "s039-noisy-diagnosis": (
+        "Guarantee a diagnosis and a safe stop when some readings may be wrong and the device hides the cost of each test.",
+        "Price every possible path on small devices, then test cases where two devices incur their highest costs at different times or require repeated measurements.",
+    ),
+    "s040-frontier-portfolio": (
+        "Choose an optimal assembly plan across groups that share parts. Report how many plans tie and which parts every winning plan needs.",
+        "Enumerate small portfolios independently. Larger cases have shared parts and billions of tied choices with a known count and intersection.",
+    ),
+    "s041-branch-reports": (
+        "Answer date-range reports across a branching ledger where a price change can revalue thousands of existing rows.",
+        "Rebuild small ledgers directly, then compare a large forked history to sums derived independently from its transactions and rates.",
+    ),
+    "s042-station-recovery": (
+        "Commission a diagnostic station whose tests and costs depend on past wiring readings. Faulty wiring can take an entire probe offline.",
+        "Exercise both services independently, then compare the integrated station’s disabled probes and guaranteed diagnoses with exhaustive small-device trials.",
+    ),
 }
 
 ROUTING_RULES = {
@@ -99,7 +187,7 @@ ROUTING_RULES = {
 }
 
 CONNECTORS = {
-    "opencode": ("OpenCode", "opencode", "Run in autonomous JSONL mode. Read tool events and per-step token usage.", "Sign in or configure a provider in OpenCode. Model format: provider/model."),
+    "opencode": ("OpenCode", "opencode", "Start a private OpenCode server for each attempt. Read tool events and per-step token usage, and stop its workers at the stage deadline.", "Sign in or configure a provider in OpenCode. Model format: provider/model."),
     "cline": ("Cline", "cline", "Start a local one-shot JSONL session. Read tool events and cumulative usage where emitted.", "Authenticate in Cline. Use provider/model or a model ID on Cline's default provider."),
     "kilo": ("Kilo Code", "kilo", "Pipe the prompt into an autonomous run. Read tool and step events from JSONL.", "Configure a Kilo provider and its autonomous permissions. Model format: provider/model."),
     "codex": ("Codex CLI", "codex", "Run an ephemeral codex exec session with workspace-write access. Read JSONL tool items and turn usage.", "Authenticate in Codex. Pass a Codex model ID or use its configured default."),

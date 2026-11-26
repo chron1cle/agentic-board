@@ -6,6 +6,7 @@ function runLabel(entry) {
     [entry.harness, entry.model].filter(Boolean).join(' / '),
     entry.boardVersion ? `v${entry.boardVersion}` : '',
     worldSelection(entry.selection, entry.scoreSegments),
+    entry.status === 'incomplete' ? 'Incomplete' : '',
     entry.boardSize ? `${entry.stageReached}/${entry.selectedStages || entry.boardSize} cleared` : '',
   ].filter(Boolean).join(' · ')
 }

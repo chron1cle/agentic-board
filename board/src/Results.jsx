@@ -4,6 +4,7 @@ import { regionOf, worldSelection } from './layout.js'
 
 const STATUS = {
   archive: 'Archived runs',
+  incomplete: 'Incomplete runs',
   control: 'Control runs',
   partial: 'Partial runs',
   telemetry_incomplete: 'Runs without tool accounting',
@@ -94,6 +95,7 @@ export default function Results({ index, current, onOpen, onReplay }) {
               <option key={key} value={key}>
                 {run.board} v{run.boardVersion} · seed {run.seed} · {STATUS[run.status] || 'Benchmark runs'}
                 {run.selection ? ` · ${worldSelection(run.selection, run.scoreSegments)}` : ''}
+                {run.schema >= 3 ? ' · deadline grading' : ' · legacy scoring'}
               </option>
             ))}
           </select>
@@ -154,7 +156,7 @@ export default function Results({ index, current, onOpen, onReplay }) {
       </div>
       <p className="hint">
         Each world is scored out of 100. Every level in the world contributes equally after
-        adjusting for its maximum points. <b>Cleared</b> counts stages passed,
+        adjusting for its maximum points. An incomplete world has no final score. <b>Cleared</b> counts stages passed,
         because a failed stage ends the run. <b>First-try</b> is the share of cleared stages won on
         attempt one; <b>Uptake</b> is how often a failed attempt turned into a pass on the next try.
       </p>
